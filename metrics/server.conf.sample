@@ -1,0 +1,6 @@
+# !!ATTENTION: this file is parsed as python script!!
+
+db_host=''
+db_user='production'
+db_passwd=''
+db_name='icars_zh'

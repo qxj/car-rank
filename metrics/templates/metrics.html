@@ -1,0 +1,157 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Car Rank Metrics</title>
+    <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <script src="http://cdn.bootcss.com/jquery/1.11.2/jquery.min.js"></script>
+    <script src="http://cdn.bootcss.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+	<style type="text/css">
+		body{
+			margin:0;
+			height:100%;
+			width:100%;
+		}
+        #mapContainer {
+            height: 800px;
+        }
+	</style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-4">
+        <form class="form-inline" action="/metrics" method="get">
+          <div class="form-group">
+            <select class="form-control" name="city_code">
+              <option value="110100">北京</option>
+              <option value="210200">大连</option>
+              <option value="310100">上海</option>
+              <option value="320100">南京</option>
+              <option value="320500">苏州</option>
+              <option value="330100">杭州</option>
+              <option value="340100">合肥</option>
+              <option value="420100">武汉</option>
+              <option value="430100">长沙</option>
+              <option value="440100">广州</option>
+              <option value="440300">深圳</option>
+              <option value="440600">佛山</option>
+              <option value="441900">东莞</option>
+              <option value="450100">南宁</option>
+              <option value="460100">海口</option>
+              <option value="460200">三亚</option>
+              <option value="510100">成都</option>
+              <option value="610100">西安</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Lng</label>
+            <input type="text" class="form-control" name="lng" size="7" value="{{ longitude }}"/>
+          </div>
+          <div class="form-group">
+            <label>Lat</label>
+            <input type="text" class="form-control" name="lat" size="7" value="{{ latitude }}"/>
+          </div>
+          <div class="form-group">
+            <label>Exp</label>
+            <input type="checkbox" class="form-control" name="exp" value="1" />
+          </div>
+          <button type="submit" class="btn btn-default">Query</button>
+        </form>
+        <div id="mapContainer"></div>
+        <div>Request from: {{ remote_ip }} / Query time: {{ query_time }}ms </div>
+      </div>
+      <div class="col-md-8">
+        <table class="table">
+          <tr>
+            <th>#</th>
+            <th>car</th>
+            <th>distance</th>
+            <th>fscore</th>
+            <th>rscore</th>
+            <th>price</th>
+            <th>recommend</th>
+            <th>send</th>
+          </tr>
+          {% for car in car_list %}
+          <tr class="car-row">
+            <td>
+              {{ car['rank'] }}
+            </td>
+            <td>
+              <a class="car-item" href="http://cp.p2pzc.com/cp/car/{{ car['xid'] }}/detail"  target="_blank">
+                {{ car['name'] }}
+              </a>
+              ({{ car['licence_plate_no'] }} / <span class="car-id">{{ car['id'] }}</span>)
+            </td>
+            <td>{{ car['distance'] }}</td>
+            <td>{{ car['final_score'] }}</td>
+            <td>{{ car['rank_score'] }}</td>
+            <td>{{ car['price_daily'] }}</td>
+            <td>{{ car['recommend_level'] }}</td>
+            <td>{{ car['can_send'] }}</td>
+          </tr>
+          {% end %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="http://webapi.amap.com/maps?v=1.3&key=5e1b609ffed834c59f689e8b55d0f4a1"></script>
+  <script type="text/javascript">
+    var Cars = [
+        {% for car in car_list %}
+        [{{ car['id'] }}, {{ car['longitude'] }}, {{ car['latitude'] }}],
+        {% end %}
+    ];
+    // TODO:
+    // $(".car-row").hover();
+
+    $("select[name=city_code] option[value={{ city_code }}]").attr('selected', 'selected');
+
+    // map settings
+    var map, maker;
+    map = new AMap.Map("mapContainer", {
+        resizeEnable: true,
+        dragEnable: true,
+        zoomEnable: true,
+        zooms: [3,18],
+        view: new AMap.View2D({
+            center: new AMap.LngLat({{ longitude }}, {{ latitude }}),
+            zoom: 14
+        })
+    });
+    addMaker({{ longitude }}, {{ latitude }});
+    // change city
+    $("select[name=city_code]").change(function(){
+        var cityStr = $(this).find('option:selected').text();
+        map.setCity(cityStr);
+        clearMaker();
+        console.log('change to city: ' + cityStr);
+    });
+    // mouse click to select longitude/latitude
+    var clickEventListener=AMap.event.addListener(map,'click',function(e){
+        var lng = e.lnglat.getLng();
+        var lat = e.lnglat.getLat();
+        $("input[name=lng]").val(lng);
+        $("input[name=lat]").val(lat);
+        clearMaker();
+        addMaker(lng, lat);
+    });
+    function addMaker(lng, lat) {
+        marker = new AMap.Marker({
+            icon:"http://webapi.amap.com/images/marker_sprite.png",
+            position:new AMap.LngLat(lng, lat)
+        });
+        marker.setMap(map);
+    }
+    function clearMaker() {
+        marker.setMap(null);
+    }
+    // mark cars in map
+    $.each(Cars, function(idx, car) {
+        addMaker(car[1], car[2]);
+    });
+  </script>
+</body>
+</html>

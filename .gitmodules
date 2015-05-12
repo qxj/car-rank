@@ -1,0 +1,3 @@
+[submodule "pdlib"]
+	path = pdlib
+	url = ssh://git@stash.dzuche.com:7999/pdsa/pdlib.git
