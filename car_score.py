@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-20 17:17:01>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-20 17:47:00>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
 #
 
 from __future__ import division
-import sys
 import argparse
+import cPickle
 import datetime
 import logging
 import pdb
+import sys
 import time
 
 sys.path.append('./pdlib/py')
@@ -22,18 +23,35 @@ logger = None
 
 
 class CarScore(object):
-    def __init__(self, interval_minutes=5, throttling_num=0):
+    def __init__(self, interval_mins=5, throttling_num=0,
+                 checkpoint_file='./car_score.cp'):
         self.db = mydb.get_db('master')
         self.db_score = mydb.get_db('master')
         # yesterday this time
-        self.update_time = datetime.datetime.today() - \
-                           datetime.timedelta(minutes=interval_minutes)
+        self.update_time = self._update_time(interval_mins, checkpoint_file)
         logger.info('[init] update time: %s', self.update_time)
         self.throttling = Throttling(throttling_num)
 
     def commit(self):
         self.db.commit()
         self.db_score.commit()
+
+    def _update_time(self, interval_minutes, checkpoint_file):
+        ts = None
+        try:
+            with open(checkpoint_file) as fp:
+                ts = cPickle.load(fp)
+        except:
+            logger.warn('no checkpoint file is found: %s', checkpoint_file)
+        try:
+            with open(checkpoint_file, 'w') as fp:
+                cPickle.dump(datetime.datetime.now(), fp)
+        except:
+            logger.warn('failed to dump checkpoint file: %s', checkpoint_file)
+        if not isinstance(ts, datetime.datetime):
+            ts = datetime.datetime.today() - \
+                 datetime.timedelta(minutes=interval_minutes)
+        return ts
 
     def _update(self, car_id, value_dict):
         # TODO anti snow
@@ -398,6 +416,9 @@ def main():
     parser.add_argument('--init', action='store_true', help='init data')
     parser.add_argument('--throttling', type=int, default=100,
                         help='throttling update num per second')
+    parser.add_argument('--checkpoint', type=str,
+                        default='./car_score.checkpoint',
+                        help='checkpoint file to save latest update timestamp')
     parser.add_argument('--interval', type=int, default=10,
                         help='interval minutes to update')
     parser.add_argument('--dry', action='store_true', help='whether dry run')
@@ -414,7 +435,9 @@ def main():
         # only consider car actived in the past of half-year
         interval_minutes = 60*24*30*6
 
-    cs = CarScore(interval_minutes, args.throttling)
+    cs = CarScore(interval_mins=interval_minutes,
+                  throttling_num=args.throttling,
+                  checkpoint_file=args.checkpoint)
     if args.action == 'prepare':
         cs.sync_cars()
         cs.update_proportion()
