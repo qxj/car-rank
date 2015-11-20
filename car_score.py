@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-20 17:12:48>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-20 17:17:01>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -103,7 +103,7 @@ class CarScore(object):
             set cf.owner_send=cr.owner_can_send,
             cf.owner_send_desc_len=length(cr.owner_can_send_service),
             cf.recommend_level=cr.recommend_level
-            where where cr.update_time > '{}'
+            where cr.update_time > '{}'
         '''.format(self.update_time)
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
