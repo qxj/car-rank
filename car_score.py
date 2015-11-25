@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 11:37:24>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 15:40:02>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -186,8 +186,8 @@ class CarScore(object):
                 friendly_score, punctual_score,
                 car_performance_score, car_condition_score
                 from order_reviews
-                where carid={} and date_created>subdate(curdate(), 90)
-                order by date_created desc limit 10
+                where carid={} and date_created>subdate(curdate(), 60)
+                order by date_created desc limit 4
             '''.format(car_id)
             irows = db.exec_sql(sql)
             owner_score = 0
@@ -381,14 +381,9 @@ class CarScore(object):
                 scores['w_price'] = 30*(1.15-proportion)/(1.15-0.7)
             elif 1.3 < proportion < 1.6:
                 scores['w_price'] = 30*(proportion-1.3)/(1.3-1.6)
+            scores['w_price'] -= 5
         if proportion >= 1.6:
             scores['w_price'] = -30
-        # distance
-        scores['w_send'] = 0
-        if row['owner_send'] and row['owner_send_desc_len'] > 15:
-            scores['w_send'] = 0.5
-        if row['owner_send_has_tags']:
-            scores['w_send'] = 3
         # accept
         if row['auto_accept']:
             scores['w_accept'] = 15
@@ -400,17 +395,17 @@ class CarScore(object):
         scores['w_review_car'] = 0
         review_owner = row['review_owner']
         if review_owner > 0:
-            scores['w_review_owner'] = 10*(review_owner - 3)/2
+            scores['w_review_owner'] = 8*(review_owner - 3)/2
         review_car = row['review_car']
         if review_car > 0:
-            scores['w_review_car'] = 10*(review_car - 3)/2
+            scores['w_review_car'] = 7*(review_car - 3)/2
         # recommend
         recommend_level = row['recommend_level']
         scores['w_recommend'] = 0
         if recommend_level > 10:
             scores['w_recommend'] = 15
         elif recommend_level > 0:
-            scores['w_recommend'] = 10
+            scores['w_recommend'] = 7.5
         elif recommend_level < 0:
             scores['w_recommend'] = -20
         # manual
@@ -441,6 +436,12 @@ class CarScore(object):
             rows[k] = round(v, 2)
         rows['score'] = round(car_score, 2)
         rows['car_id'] = row['car_id']
+        # distance
+        rows['w_send'] = 0
+        if row['owner_send'] and row['owner_send_desc_len'] > 15:
+            rows['w_send'] = 0.5
+        if row['owner_send_has_tags']:
+            rows['w_send'] = 1
         return rows
 
     def update_scores(self):
