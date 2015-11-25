@@ -20,7 +20,11 @@ update() {
 }
 
 update_all() {
-    before=$(echo 60*24*30*12 | bc -l) # before one year
+    days=$1
+    if [[ -z $days ]]; then
+        days=365
+    fi
+    before=$(echo 60*24*$days | bc -l) # before one year
     flock -xn /tmp/update_scores.lck -c "./car_score.py prepare --throttling 500 --before $before  --checkpoint checkpoint.prepare && ./car_score.py run --throttling 500 --before $before  --checkpoint checkpoint.run"
     if [[ $? -ne 0 ]]; then
         log "Another instance is running.."
@@ -40,7 +44,7 @@ case "$1" in
         update
         ;;
     "all")
-        update_all
+        update_all $2
         ;;
     "calc")
         calc_scores
