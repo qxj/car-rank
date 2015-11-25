@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 15:40:02>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 16:40:39>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -250,8 +250,9 @@ class CarScore(object):
     # `recent_cancelled_renter` int(11) DEFAULT NULL COMMENT '1个月内最后10个支付后订单(不包含接收后订单)租客取消数',
     def update_orders(self):
         db = mydb.get_db('slave')
+        ## recent action (rejected/accepted)
         sql = '''select distinct(carid) car_id
-            from orders where mtime> '{}' and status='rejected'
+            from orders where mtime> '{}' and rtime>0
         '''.format(self.update_time)
         rows = db.exec_sql(sql)
         updated_cnt = 0
@@ -259,89 +260,51 @@ class CarScore(object):
             car_id = row['car_id']
             sql = '''select status, uid
                 from orders where carid={} and
-                ctime>subdate(curdate(), 90)
+                ctime>subdate(curdate(), 90) and rtime>0
                 order by ctime desc limit 10
             '''.format(car_id)
             irows = db.exec_sql(sql)
-            rejected_cnt = 0
+            rejected_cnt = accepted_cnt = 0
             users = set()
             for irow in irows:
                 if irow['status'] == 'rejected' and \
                    irow['uid'] not in users:
                     rejected_cnt += 1
                     users.add(irow['uid'])
-            updated_cnt += self._update(car_id,
-                                        {'recent_rejected': rejected_cnt})
-            logger.debug('[accept] car %d recent_rejected %d',
-                         car_id, rejected_cnt)
-        logger.info('[accept] update %d recent_rejected, affected %d rows',
-                    len(rows), updated_cnt)
-        ## ----------------8<----------------
-        sql = '''select distinct(carid) car_id
-            from orders where mtime>'{}' and status!='rejected' and rtime>0
-            and status_ext!=5
-        '''.format(self.update_time)
-        rows = db.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            car_id = row['car_id']
-            sql = '''select status, status_ext, rtime
-                from orders where carid={} and
-                ctime>subdate(curdate(), 90)
-                order by ctime desc limit 10
-            '''.format(car_id)
-            irows = db.exec_sql(sql)
-            accepted_cnt = 0
-            for irow in irows:
-                if irow['status'] != 'rejected' and \
-                   irow['rtime'] and irow['status_ext'] != 5:
+                elif irow['status'] != 'rejected' and \
+                     irow['rtime'] and irow['status_ext'] != 5:
                     accepted_cnt += 1
             updated_cnt += self._update(car_id,
-                                        {'recent_accepted': accepted_cnt})
-            logger.debug('[accept] car %d recent_accepted %d',
-                         car_id, accepted_cnt)
-        logger.info('[accept] update %d recent_accepted, affected %d rows',
+                                        {'recent_rejected': rejected_cnt,
+                                         'recent_accepted': accepted_cnt})
+            logger.debug('[accept] car %d recent rejected %d, accepted %d',
+                         car_id, rejected_cnt, accepted_cnt)
+        logger.info('[accept] update %d recent_rejected, affected %d rows',
                     len(rows), updated_cnt)
-        ## ----------------8<----------------
-        sql = '''select o.carid car_id, count(1) recent_cancelled_owner
-            from orders o
-            join (
-                select distinct(carid) car_id
-                from orders where mtime>'{}' and status='cancelled' and
-                status_ext=5
-            ) oc on o.carid=oc.car_id where o.ctime>subdate(curdate(),30)
-                and status='cancelled' and status_ext=5
-            group by o.carid
-        '''.format(self.update_time)
-        rows = db.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            updated_cnt += self._update(row['car_id'], row)
-            logger.debug('[accept] car %d recent_cancelled_owner %d',
-                         row['car_id'], row['recent_cancelled_owner'])
-        logger.info('[accept] update %d recent_cancelled_owner, affected %d rows',
-                    len(rows), updated_cnt)
-        ## ----------------8<----------------
+        ## recent cancelled (owner/renter)
         sql = '''select o.carid car_id,
             count(if(ptime>0,id,null)) recent_paid,
-            count(if(status='cancelled' and status_ext=2,id,null)) recent_cancelled_renter
+            count(if(status='cancelled' and status_ext=2,id,null)) recent_cancelled_renter,
+            count(if(status='cancelled' and status_ext in (5,15),id,null)) recent_cancelled_owner
             from orders o
             join (
                 select distinct(carid) car_id
-                from orders where mtime>'{}' and status='cancelled' and
-                status_ext=2
-            ) oc on o.carid=oc.car_id where o.ctime>subdate(curdate(),30)
+                from orders where mtime>'{}' and status='cancelled'
+                    and status_ext in (2,5,15)
+            ) oc on o.carid=oc.car_id
+            where o.ctime>subdate(curdate(),30)
             group by o.carid
         '''.format(self.update_time)
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
             updated_cnt += self._update(row['car_id'], row)
-            logger.debug('[accept] car %d recent_cancelled_renter %d',
-                         row['car_id'], row['recent_cancelled_renter'])
-        self.db.commit()
-        logger.info('[accept] update %d recent_cancelled_renter, affected %d rows',
+            logger.debug('[accept] car %d recent cancelled, owner %d, renter %d',
+                         row['car_id'], row['recent_cancelled_owner'],
+                         row['recent_cancelled_renter'])
+        logger.info('[accept] update %d recent cancelled, affected %d rows',
                     len(rows), updated_cnt)
+        self.db.commit()
 
     # `pic_num` int(11) DEFAULT NULL,
     # `desc_len` int(11) DEFAULT NULL,
