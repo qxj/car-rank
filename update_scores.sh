@@ -49,7 +49,7 @@ case "$1" in
     "calc")
         calc_scores
         ;;
-    "*")
+    *)
         echo "Please specify an argument."
         ;;
 esac
