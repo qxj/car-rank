@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 11:14:09>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 11:37:24>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -148,7 +148,7 @@ class CarScore(object):
         sql = '''update car_rank_feats cf
             join car_rank cr on cf.car_id=cr.car_id
             set cf.owner_send=cr.owner_can_send,
-            cf.owner_send_desc_len=length(cr.owner_can_send_service),
+            cf.owner_send_desc_len=char_length(cr.owner_can_send_service),
             cf.recommend_level=cr.recommend_level
             where cr.update_time > '{}'
         '''.format(self.update_time)
@@ -159,7 +159,7 @@ class CarScore(object):
     def update_can_send1(self):
         db = mydb.get_db('slave')
         sql = '''select car_id, owner_can_send owner_send,
-            length(owner_can_send_service) owner_send_desc_len,
+            char_length(owner_can_send_service) owner_send_desc_len,
             recommend_level from car_rank where update_time > '{}'
         '''.format(self.update_time)
         rows = db.exec_sql(sql)
@@ -348,7 +348,7 @@ class CarScore(object):
     def update_car_info(self):
         db = mydb.get_db('slave')
         sql = '''select id car_id,
-            photos, length(description) desc_len
+            photos, char_length(description) desc_len
             from car
             where updated_on>'{}'
         '''.format(self.update_time)
