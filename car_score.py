@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 12:32:11>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 14:39:25>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -182,7 +182,7 @@ class CarScore(object):
         updated_cnt = 0
         for row in rows:
             car_id = row['car_id']
-            sql = '''select tag_keys,
+            sql = '''select is_send_car,
                 friendly_score, punctual_score,
                 car_performance_score, car_condition_score
                 from order_reviews
@@ -193,19 +193,13 @@ class CarScore(object):
             owner_score = 0
             car_score = 0
             review_cnt = 0
-            recent_tags = []
-            for irow in irows:
+            has_tags = 0
+            for i, irow in enumerate(irows):
                 review_cnt += 1
-                if len(recent_tags) < 2: # only consider recent two tags
-                    if irow['tag_keys']:
-                        recent_tags.append(irow['tag_keys'])
+                if i < 2 and irow['is_send_car']: # only consider recent two tags
+                    has_tags = 1
                 owner_score += (irow['friendly_score'] + irow['punctual_score'])
                 car_score += (irow['car_performance_score'] + irow['car_condition_score'])
-            has_tags = 0
-            for tag in recent_tags:
-                keys = tag.split(',')
-                if '29' in keys or '30' in keys:
-                    has_tags = 1
             os = cs = 0
             if review_cnt > 0:
                 os = owner_score/review_cnt/2
