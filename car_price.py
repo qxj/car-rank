@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_price.py  Time-stamp: <Julian Qian 2015-11-20 14:09:14>
+# @(#) car_price.py  Time-stamp: <Julian Qian 2015-11-26 14:25:38>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_price.py,v 0.1 2015-11-19 13:13:25 jqian Exp $
@@ -49,6 +49,15 @@ class CarPrice(object):
                                           on_duplicate_ignore=False)
         logger.info('update %d car price', updated_cnt)
 
+    def update_price_all(self):
+        sql = '''update car_rank_feats cf
+        join car_rank_price cp on cf.car_id=cp.car_id
+        set cf.suggest_price=cp.suggest_price
+        '''
+        db = mydb.get_db('master')
+        updated_cnt = db.exec_sql(sql)
+        logger.info('update %d car feats', updated_cnt)
+
     def update_price(self):
         ds = datetime.datetime.now() - datetime.timedelta(0.5)
         sql = '''select car_id,
@@ -68,7 +77,7 @@ class CarPrice(object):
 def main():
     cp = CarPrice()
     cp.sync()
-    cp.update_price()
+    cp.update_price_all()
 
 if __name__ == "__main__":
     main()
