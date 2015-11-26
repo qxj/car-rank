@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-25 16:40:39>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 11:25:35>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -258,7 +258,7 @@ class CarScore(object):
         updated_cnt = 0
         for row in rows:
             car_id = row['car_id']
-            sql = '''select status, uid
+            sql = '''select status, status, uid, rtime
                 from orders where carid={} and
                 ctime>subdate(curdate(), 90) and rtime>0
                 order by ctime desc limit 10
