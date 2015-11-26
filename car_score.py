@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 14:39:25>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 15:06:58>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -329,18 +329,24 @@ class CarScore(object):
         suggest_price = row['suggest_price']
         proportion = row['proportion']
         if suggest_price <= 200:
-            if 0.8 < proportion < 1.1:
+            if proportion <= 0.8:
+                scores['w_price'] = 30
+            elif 0.8 < proportion < 1.1:
                 scores['w_price'] = 30*(1.05-proportion)/(1.05-0.8)
             elif 1.35 < proportion < 1.6:
                 scores['w_price'] = 20*(proportion-1.3)/(1.3-1.6)
+            else:
+                scores['w_price'] = -20
         else:
-            if 0.7 < proportion < 1.15:
+            if proportion <= 0.7:
+                scores['w_price'] = 30
+            elif 0.7 < proportion < 1.15:
                 scores['w_price'] = 30*(1.15-proportion)/(1.15-0.7)
             elif 1.3 < proportion < 1.6:
                 scores['w_price'] = 30*(proportion-1.3)/(1.3-1.6)
+            else:
+                scores['w_price'] = -30
             scores['w_price'] -= 5
-        if proportion >= 1.6:
-            scores['w_price'] = -30
         # accept
         if row['auto_accept']:
             scores['w_accept'] = 15
