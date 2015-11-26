@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_rank.py  Time-stamp: <Julian Qian 2015-05-12 15:46:23>
+# @(#) car_rank.py  Time-stamp: <Julian Qian 2015-11-26 10:21:20>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_rank.py,v 0.1 2015-01-16 15:07:34 jqian Exp $
@@ -72,7 +72,7 @@ if SingletonLock("/tmp/_{}.lck".format(os.path.basename(sys.argv[0]))).locked():
 logger = None
 
 class RankTable(object):
-    def __init__(self, dbhost, exp=False, dry=False, cars=[]):
+    def __init__(self, dbhost, exp=False, dry=False):
         self.dry = dry
         self.exp = exp
         self.dbw = mydb.get_db(dbhost, conv=True)
@@ -80,9 +80,6 @@ class RankTable(object):
             self.dbr = mydb.get_db('slave', conv=True)
         else:
             self.dbr = mydb.get_db(dbhost, conv=True)
-        if len(cars):
-            cars.append(0)
-        self.cars = tuple(cars)
 
     def sync_cars(self):
         sql = '''insert into car_rank(car_id)
@@ -94,13 +91,13 @@ class RankTable(object):
         '''
         affected_rows = self.dbw.exec_sql(sql, needCommit=True, returnAffectedRows=True)
         logger.info("inserted {} new cars".format(affected_rows))
-        # remove inactive cars
-        sql = '''delete cr from car_rank cr
-        left join car c on c.id=cr.car_id
-        where c.id is null or c.status!='active'
-        '''
-        affected_rows = self.dbw.exec_sql(sql, needCommit=True, returnAffectedRows=True)
-        logger.info("remove {} obsolote cars".format(affected_rows))
+        ## remove inactive cars
+        # sql = '''delete cr from car_rank cr
+        # left join car c on c.id=cr.car_id
+        # where c.id is null or c.status!='active'
+        # '''
+        # affected_rows = self.dbw.exec_sql(sql, needCommit=True, returnAffectedRows=True)
+        # logger.info("remove {} obsolote cars".format(affected_rows))
         self.dbw.commit()
 
     def update_car_info(self):
@@ -113,34 +110,12 @@ class RankTable(object):
         join car_stats cs on c.id=cs.cid
         join car_freetime cf on c.id=cf.car_id
         '''
-        if len(self.cars):
-            sql += '''
-            where cr.car_id in {}
-            '''.format(self.cars)
         rows = self.dbr.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
             updated_cnt += self.dbw.update('car_rank', {'car_id': row['car_id']}, row)
         self.dbw.commit()
         logger.info('updated {} car info'.format(updated_cnt))
-
-    def update_car_hosted_info(self):
-        sql = '''select cr.car_id, ch.hosted_price,
-        if(hosted_end<now(),0,timestampdiff(hour,
-            if(hosted_start<now(),now(),hosted_start),hosted_end))/24 as hosted_days
-        from car_rank cr
-        join car_hosted ch on cr.car_id=ch.car_id
-        '''
-        if len(self.cars):
-            sql += '''
-            where cr.car_id in {}
-            '''.format(self.cars)
-        rows = self.dbr.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            updated_cnt += self.dbw.update('car_rank', {'car_id': row['car_id']}, row)
-        self.dbw.commit()
-        logger.info('updated {} car hosted info'.format(updated_cnt))
 
     def update_car_order_info(self):
         sql = '''select car_id,
@@ -206,12 +181,6 @@ class RankTable(object):
         from orders o
         ) t1 on t1.id=o.id
         ) t2
-        '''
-        if len(self.cars):
-            sql += '''
-            where car_id in {}
-            '''.format(self.cars)
-        sql += '''
         group by car_id
         '''
         rows = self.dbr.exec_sql(sql)
@@ -220,201 +189,6 @@ class RankTable(object):
             updated_cnt += self.dbw.update('car_rank', {'car_id': row['car_id']}, row)
         self.dbw.commit()
         logger.info('update {} car order info'.format(updated_cnt))
-
-    def update_car_score(self):
-        signed_weight    = 5
-        recommend_weight = 18
-        confirm_weight   = 20
-        rented_weight    = 8
-        review_weight    = 18
-        price_weight     = 15
-        sql = '''select * from car_rank
-        '''
-        if len(self.cars):
-            sql += '''
-            where car_id in {}
-            '''.format(self.cars)
-        rows = self.dbr.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            car_id = row['car_id']
-            scores = collections.defaultdict(lambda:0)
-            if row['signed_level']>0:
-                scores['signed']=signed_weight
-
-            recommend_level=row['recommend_level']
-            if recommend_level==1:
-                scores['recommend']=recommend_weight*0.6
-            elif recommend_level==2:
-                scores['recommend']=recommend_weight
-            elif recommend_level==11:
-                scores['recommend']=recommend_weight*2.5
-            elif recommend_level==-1:
-                scores['recommend']=recommend_weight*(-2)
-
-            ppnum=row['past_paid_order_cnt']
-            pcnum=row['past_confirm_order_cnt']
-            past_confirm_score=0
-            mpnum=row['month_paid_order_cnt']
-            mcnum=row['month_confirm_order_cnt']
-            month_confirm_score=0
-            wpnum=row['week_paid_order_cnt']
-            wcnum=row['week_confirm_order_cnt']
-
-            if ppnum<1:
-                past_confirm_score=0
-            elif ppnum<3:
-                past_confirm_score=(pcnum/ppnum)*0.4+(ppnum/30)*0.6
-            elif ppnum<6:
-                past_confirm_score=(pcnum/ppnum)*0.7+(ppnum/30)*0.3
-            else:
-                past_confirm_score=(pcnum/ppnum)*0.9+(ppnum/30)*0.1
-            if mpnum<1:
-                month_confirm_score=0
-            elif mpnum<3:
-                month_confirm_score=(mcnum/mpnum)*0.4+(mpnum/15)*0.6
-            elif mpnum<5:
-                month_confirm_score=(mcnum/mpnum)*0.7+(mpnum/15)*0.3
-            else:
-                month_confirm_score=(mcnum/mpnum)*0.9+(mpnum/15)*0.1
-
-            reco_punish_weight=1
-            if recommend_level>0:
-                reco_punish_weight=0.6
-            past_reject_punish=0
-            if ppnum==0:
-                past_reject_punish=8
-            elif ppnum==1 and pcnum==0:
-                past_reject_punish=10
-            elif ppnum==2 and pcnum==0:
-                past_reject_punish=12
-            elif ppnum==2 and pcnum==1:
-                past_reject_punish=4
-            elif ppnum>2 and ppnum<=4 and pcnum/ppnum<0.6:
-                past_reject_punish=(0.6-pcnum/ppnum)*18
-            elif ppnum>4 and pcnum/ppnum<0.6 and pcnum/ppnum>=0.5:
-                past_reject_punish=(0.6-pcnum/ppnum)*30
-            elif ppnum>4 and pcnum/ppnum<0.5 and pcnum/ppnum>=0.35:
-                past_reject_punish=(0.6-pcnum/ppnum)*50-2
-            elif ppnum>4 and pcnum/ppnum<0.35:
-                past_reject_punish=(0.6-pcnum/ppnum)*80-9.5
-            past_reject_punish=round(past_reject_punish,2)
-            week_reject_punish=0
-            wrnum=wpnum-wcnum
-            if wrnum>0:
-                week_reject_punish=7*wrnum-4
-            scores['confirm']=(past_confirm_score*0.4+
-                               month_confirm_score*0.6 )*confirm_weight - (
-                                   past_reject_punish+
-                                   week_reject_punish)*reco_punish_weight
-
-            mth_time=row['month_rented_time']
-            wek_free=row['week_freetime']
-            reco_rented_weight=1
-            if recommend_level>0:
-                reco_rented_weight=2
-            if mth_time<20 or wek_free>0:
-                scores['rented']=(((20-mth_time)/20)*0.2 +
-                                  (wek_free/7)*0.8)*rented_weight *reco_rented_weight
-            if wek_free<=2:
-                scores['rented']-=(3-wek_free)*6
-
-            if self.exp:
-                recent_rentday = row['recent_rentday']
-                recent_weight = -15
-                if recent_rentday > 0:
-                    if recent_rentday >= 1:
-                        scores['recent'] += 2
-                    if recent_rentday >= 3:
-                        scores['recent'] += 3
-                    if recent_rentday >= 7:
-                        scores['recent'] += 1
-                    scores['recent'] *= recent_weight
-
-            pd=row['price_daily']
-            if recommend_level in (11,12) and row['hosted_price']>0:
-                pd = row['hosted_price']
-            sp=row['suggest_price']
-            if pd>0 and sp>0:
-                if sp-pd>=0:
-                    scores['price']=round((((sp-pd)/sp)*0.5+(min((sp-pd),200)/200)*0.5)*price_weight,2)
-                else:
-                    scores['price']=round((((sp-pd)/sp)*0.5+(max((sp-pd),-200)/200)*0.5)*price_weight,2)
-
-            rp=row['review_point']
-            rc=row['review_cnt']
-            if rc<1:
-                scores['review']=0
-            elif rc<3:
-                scores['review']=round((((rp-4)/4)*0.4+(rc/30)*0.6)*review_weight,2)
-            elif rc<5:
-                scores['review']=round((((rp-4)/4)*0.7+(rc/30)*0.3)*review_weight,2)
-            else:
-                scores['review']=round((((rp-4)/4)*0.9+(rc/30)*0.1)*review_weight,2)
-
-            # hosted cars
-            if self.exp and recommend_level in (11,12):
-                if recommend_level == 11: # full hosted
-                    hosted_weight = 15
-                elif recommend_level == 12: # half hosted
-                    hosted_weight = 5
-                hosted_days = row['hosted_days']
-                scores['hosted'] = 20 + hosted_weight*(1-min(hosted_days,7)/7)
-                # scores['hosted'] = 20 + hosted_weight*min(
-                #     max(pow(min(abs(hosted_days-3),0.5),-0.2),
-                #         2),
-                #     0.5)
-
-            # can_send cars
-            if self.exp and row['can_send'] > 0:
-                scores['send'] = 0
-
-            scores['manual'] = row['manual_weight']
-            final_score = reduce(lambda x,y:x+y, scores.itervalues())
-            if self.cars and self.dry:
-                print '#'*80
-                print '''car_id: %d\tfinal_score: %f
-                ''' % (car_id, final_score)
-                for k, v in row.iteritems():
-                    if 'score' not in k and k not in ('email', 'head_uin', 'car_id'):
-                        print '{}: {}'.format(k, v)
-                print '-'*10
-                for k, v in scores.iteritems():
-                    print '{}: {}'.format(k, v)
-            if self.dry:
-                continue
-            updated_cnt += self.dbw.update('car_rank', {'car_id': car_id},
-                                          {'final_score': final_score,
-                                           'signed_score': scores['signed'],
-                                           'recommend_score': scores['recommend'],
-                                           'confirm_score': scores['confirm'],
-                                           'rented_score': scores['rented'],
-                                           'price_score': scores['price'],
-                                           'review_score': scores['review']})
-
-        self.dbw.commit()
-        logger.info('updated {} car score'.format(updated_cnt))
-
-    def update_holiday_price(self, weight):
-        if self.dry:
-            sql = '''select cr.car_id, cr.manual_weight
-            from car_rank cr
-            join car_holiday_price chp on cr.car_id=chp.carid
-            where chp.holiday_price>0 and chp.holiday_type=9
-            '''
-            rows = self.dbr.exec_sql(sql, resultFormat='tuple')
-            for row in rows:
-                print row[0], row[1]
-            print >> sys.stderr, "affected %d rows" % len(rows)
-        else:
-            sql = '''update car_rank cr
-            join car_holiday_price chp on cr.car_id=chp.carid
-            set cr.manual_weight=%d
-            where chp.holiday_price>0 and chp.holiday_type=9
-            ''' % weight
-            affected_rows = self.dbw.exec_sql(sql, returnAffectedRows=True)
-            self.dbw.commit()
-            logger.info('update {} car manual weight'.format(affected_rows))
 
     def sync_hosted(self):
         dbc = mydb.db_conf('entrust', writable=True)
@@ -434,177 +208,19 @@ class RankTable(object):
             return -1
         logger.info("import car_hosted to icars_zh, ret: {}".format(ret))
 
-    def fix_suggest_price(self):
-        db = mydb.get_db('entrust', conv=True)
-        update_cnt = db.update('car_hosted', {'hosted_price': 0},
-                               {'hosted_price': 399,
-                                'hosted_holiday_price': 499})
-        db.commit()
-        logger.info("fixed {} cars' suggest price".format(update_cnt))
-
-    def holiday_workaround_price(self):
-        """downvote car if it's rented in 2015-02-19
-        expect final_score: [30, 70]
-        """
-        sql = '''select
-        chp.carid,
-        chp.holiday_price,
-        cr.suggest_price,
-        cr.final_score
-        from car_holiday_price chp
-        join car_rank cr on cr.car_id=chp.carid
-        where chp.id is not null and chp.holiday_price>0 and chp.holiday_type=9
-            and cr.can_send=0
-        group by chp.carid
-        '''
-        rows = self.dbw.exec_sql(sql)
-        if self.dry:
-            print >> sys.stderr, 'there are {} holiday cars'.format(len(rows))
-        updated_cnt = 0
-        price_punish_weight = 20
-        for row in rows:
-            car_id = row['carid']
-            hp = row['holiday_price']
-            sp = row['suggest_price']
-            if sp == 0: continue
-            final_score = 0
-            if sp>0:
-                # expect [-1, 2.5]
-                punish_score = (min((hp-sp)/sp,1)*0.5 + min(pow(hp/500,3),2)*1)*price_punish_weight
-                final_score = min(max(80 - punish_score, 30), 70)
-                if final_score < row['final_score']:
-                    final_score = row['final_score']
-                if self.dry:
-                    print '{}\t{}\t{}\t{}\t{:.0f}'.format(car_id, final_score, hp, sp, row['holiday_rented'])
-                else:
-                    updated_cnt += self.dbw.update('car_rank',
-                                                  {'car_id': car_id},
-                                                  {'final_score': final_score})
-        self.dbw.commit()
-        logger.info('[workaround] update {} holiday cars'.format(updated_cnt))
-
-    def holiday_workaround_unavailable(self):
-        '''downvote car if it is unrented in 2015-02-19'''
-        sql = '''select
-        car_id,
-        final_score,
-        length(replace(7_holiday,'0','xx'))-7 7_unava_day,
-        length(replace(3_holiday,'0','xx'))-3 3_unava_day
-        from
-        (
-        select
-        cr.car_id,
-        cr.final_score,
-        substring(cf.freetime,timestampdiff(day,date(now()),'2015-02-18'),7) 7_holiday,
-        substring(cf.freetime,timestampdiff(day,date(now()),'2015-02-18'),3) 3_holiday
-        from car_rank cr
-        join car_freetime cf on cr.car_id=cf.car_id
-        ) t where locate('0', 7_holiday)>0
-        '''
-        rows = self.dbw.exec_sql(sql)
-        updated_cnt = 0
-        unavailable_punish_weight=40
-        for row in rows:
-            final_score = row['final_score']-((pow(row['7_unava_day']/7,2)+
-                                               pow(row['3_unava_day']/3,2)*5))*unavailable_punish_weight
-            if self.dry:
-                print '{}\t{:.2f}\t{:.2f}\t{}\t{}'.format(row['car_id'],
-                                                          row['final_score'],
-                                                          final_score,
-                                                          row['7_unava_day'],
-                                                          row['3_unava_day'])
-            else:
-                updated_cnt += self.dbw.update('car_rank',
-                                              {'car_id': row['car_id']},
-                                              {'final_score': final_score})
-        if not self.dry:
-            self.dbw.commit()
-            logger.info('[workaround] downvot {} holiday unavailable cars'.format(updated_cnt))
-
-    def holiday_workaround_hosted(self):
-        '''
-        置顶半托管车辆
-        expected score: [50, 90]
-        '''
-        sql = '''select
-        cr.car_id,
-        cr.suggest_price,
-        cr.final_score,
-        ch.hosted_price,
-        ch.min_duration,
-        sum(if(do.status in ('confirmed','started') and
-            '2015-02-19' between date(do.begin) and date(do.end),1,0)) holiday_rented
-        from car_rank cr
-        join car_hosted ch on ch.car_id=cr.car_id
-        left join orders do on do.carid=cr.car_id
-        where cr.recommend_level=12 and cr.can_send=0
-        group by cr.car_id
-        '''
-        rows = self.dbw.exec_sql(sql)
-        updated_cnt = 0
-        price_punish_weight = 20
-        for row in rows:
-            car_id = row['car_id']
-            final_score = 0
-            if row['min_duration'] < 480:
-                sp = row['suggest_price']
-                hp = row['hosted_price']
-                if row['holiday_rented'] == 0 and sp>0:
-                    # expect [-1, 1]
-                    punish_score = (min((hp-sp)/sp,1) + min((hp-sp)/500,1))*price_punish_weight
-                    final_score = min(max(100 - punish_score, 50), 90)
-                    if final_score < row['final_score']:
-                        final_score = row['final_score']
-                else:
-                    final_score = -30
-            else:
-                final_score = -100
-            if self.dry:
-                print '{}\t{}\t{}\t{}\t{:.0f}'.format(car_id, final_score, hp, sp, row['holiday_rented'])
-            else:
-                updated_cnt += self.dbw.update('car_rank',
-                                              {'car_id': car_id},
-                                              {'final_score': final_score})
-        self.dbw.commit()
-        logger.info('[workaround] update {} hosted cars'.format(updated_cnt))
-
-    def holiday_workaround_sanya(self):
-        '''更新三亚全托管车辆manual_weight权重 +200
-        '''
-        sql = '''select
-        cr.car_id,
-        cr.final_score
-        from car_rank cr
-        join car c on cr.car_id=c.id
-        where c.city_code='460200' and cr.recommend_level=11
-        '''
-        rows = self.dbw.exec_sql(sql) # avoid master/slave inconsistent when sync
-        updated_cnt = 0
-        for row in rows:
-            car_id = row['car_id']
-            final_score = row['final_score'] + 1000
-            updated_cnt += self.dbw.update('car_rank',
-                                          {'car_id': car_id},
-                                          {'final_score': final_score})
-        self.dbw.commit()
-        logger.info('[workaround] update {} sanya full-hosted cars'.format(updated_cnt))
 
 def main():
     global logger
 
     parser = argparse.ArgumentParser(description='cron task')
-    parser.add_argument('action', type=str, choices=('holiday_price',
-                                                     'sync_hosted',
+    parser.add_argument('action', type=str, choices=('sync_hosted',
                                                      'update_rank',
-                                                     'fix_price',
                                                      'test'), help='actions')
-    parser.add_argument('--weight', type=int, help='weight for holiday price')
     parser.add_argument('--dbhost', type=str, default='master',
                         help='action on which db')
     parser.add_argument('--exp', action='store_true', help='whether active experiment')
     parser.add_argument('--holiday', action='store_true', help='holiday patch policy')
     parser.add_argument('--logfile', type=str, help='log file path')
-    parser.add_argument('--cars', type=str, help='test cars (id)')
     parser.add_argument('--dry', action='store_true', help='whether dry run')
     parser.add_argument('--verbose', action='store_true', help='print verbose log')
     args = parser.parse_args()
@@ -618,34 +234,11 @@ def main():
     else:
         logger = init_log(logtofile="car_rank.log", level = log_level)
 
-    update_cars = []
-    if args.cars:
-        for carid in args.cars.split(','):
-            update_cars.append(int(carid))
-    if select.select([sys.stdin,],[],[],0.0)[0]:
-        for line in sys.stdin:
-            update_cars.append(int(line.strip()))
-
-    db = RankTable(args.dbhost, exp=args.exp, dry=args.dry, cars=update_cars)
-    if args.action == 'holiday_price':
-        db.update_holiday_price(int(args.weight))
-    elif args.action == 'sync_hosted':
+    db = RankTable(args.dbhost, exp=args.exp, dry=args.dry)
+    if args.action == 'sync_hosted':
         db.sync_hosted()
-    elif args.action == 'fix_price':
-        db.fix_suggest_price()
     elif args.action == 'update_rank':
         db.sync_cars()
-        db.update_car_info()
-        db.update_car_hosted_info()
-        db.update_car_order_info()
-        db.update_car_score()
-        if args.holiday:
-            # db.holiday_workaround_price()
-            # db.holiday_workaround_hosted()
-            db.holiday_workaround_sanya()
-            # db.holiday_workaround_unavailable()
-    elif args.action == 'test':
-        db.holiday_workaround_unavailable()
 
 if __name__ == "__main__":
     main()
