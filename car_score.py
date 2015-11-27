@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-26 15:06:58>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-27 18:04:58>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
 #
+
+'''
+http://wiki.dzuche.com/pages/viewpage.action?pageId=16319251
+'''
 
 from __future__ import division
 import argparse
@@ -252,7 +256,8 @@ class CarScore(object):
         updated_cnt = 0
         for row in rows:
             car_id = row['car_id']
-            sql = '''select status, status_ext, uid, rtime
+            sql = '''select status, status_ext, uid, rtime,
+                ifnull(timestampdiff(day, begin, end),0) days
                 from orders where carid={} and
                 ctime>subdate(curdate(), 90) and rtime>0
                 order by ctime desc limit 10
@@ -268,6 +273,11 @@ class CarScore(object):
                 elif irow['status'] != 'rejected' and \
                      irow['rtime'] and irow['status_ext'] != 5:
                     accepted_cnt += 1
+                    days = min(int(irow['days']/3), 3)
+                    if days > 0:
+                        accepted_cnt += days
+                        logger.info('[accept] for log deal add extra %d days',
+                                    days)
             updated_cnt += self._update(car_id,
                                         {'recent_rejected': rejected_cnt,
                                          'recent_accepted': accepted_cnt})
@@ -328,25 +338,30 @@ class CarScore(object):
         scores['w_price'] = 0
         suggest_price = row['suggest_price']
         proportion = row['proportion']
+
         if suggest_price <= 200:
-            if proportion <= 0.8:
-                scores['w_price'] = 30
-            elif 0.8 < proportion < 1.1:
-                scores['w_price'] = 30*(1.05-proportion)/(1.05-0.8)
-            elif 1.35 < proportion < 1.6:
-                scores['w_price'] = 20*(proportion-1.3)/(1.3-1.6)
+            low = (30, -20)
+            lot = (0.8, 1.1, 1.3, 1.6)
+            if proportion <= lot[0]:
+                scores['w_price'] = low[0]
+            elif lot[0] < proportion < lot[1]:
+                scores['w_price'] = low[0]*(lot[1]-proportion)/(lot[1]-lot[0])
+            elif lot[2] < proportion < lot[3]:
+                scores['w_price'] = low[1]*(proportion-lot[2])/(lot[3]-lot[2])
             else:
-                scores['w_price'] = -20
+                scores['w_price'] = low[1]
         else:
-            if proportion <= 0.7:
-                scores['w_price'] = 30
-            elif 0.7 < proportion < 1.15:
-                scores['w_price'] = 30*(1.15-proportion)/(1.15-0.7)
-            elif 1.3 < proportion < 1.6:
-                scores['w_price'] = 30*(proportion-1.3)/(1.3-1.6)
+            hiw = (30, -30)
+            hit = (0.7, 1.15, 1.25, 1.6)
+            if proportion <= hit[0]:
+                scores['w_price'] = hiw[0]
+            elif hit[0] < proportion < hit[1]:
+                scores['w_price'] = hiw[0]*(hit[1]-proportion)/(hit[1]-hit[0])
+            elif hit[2] < proportion < hit[3]:
+                scores['w_price'] = hiw[1]*(proportion-hit[2])/(hit[3]-hit[2])
             else:
-                scores['w_price'] = -30
-            scores['w_price'] -= 5
+                scores['w_price'] = hiw[1]
+            scores['w_price'] += -5
         # accept
         if row['auto_accept']:
             scores['w_accept'] = 15
