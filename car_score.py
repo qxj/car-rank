@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-27 18:04:58>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-30 11:56:35>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -153,6 +153,7 @@ class CarScore(object):
             join car_rank cr on cf.car_id=cr.car_id
             set cf.owner_send=cr.owner_can_send,
             cf.owner_send_desc_len=char_length(cr.owner_can_send_service),
+            cf.owner_send_distance=cr.owner_can_send_distance,
             cf.recommend_level=cr.recommend_level
             where cr.update_time > '{}'
         '''.format(self.update_time)
@@ -256,7 +257,7 @@ class CarScore(object):
         updated_cnt = 0
         for row in rows:
             car_id = row['car_id']
-            sql = '''select status, status_ext, uid, rtime,
+            sql = '''select id order_id, status, status_ext, uid, rtime,
                 ifnull(timestampdiff(day, begin, end),0) days
                 from orders where carid={} and
                 ctime>subdate(curdate(), 90) and rtime>0
@@ -276,8 +277,8 @@ class CarScore(object):
                     days = min(int(irow['days']/3), 3)
                     if days > 0:
                         accepted_cnt += days
-                        logger.info('[accept] for log deal add extra %d days',
-                                    days)
+                        logger.info('[accept] car %d long order %d (%d) add extra %d days',
+                                    car_id, irow['order_id'], irow['days'], days)
             updated_cnt += self._update(car_id,
                                         {'recent_rejected': rejected_cnt,
                                          'recent_accepted': accepted_cnt})
