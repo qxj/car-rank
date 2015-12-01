@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:28:42>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:41:37>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -233,7 +233,7 @@ class CarScore(object):
         sql = '''update car_rank_feats cr
             join car_freetime cf on cr.car_id=cf.car_id
             set cr.auto_accept=if(cf.auto_accept='YES',1,0),
-            set cr.available_days=if(cf.status=1,
+            cr.available_days=if(cf.status=1,
                 length(replace(substring(cf.freetime,1,30),'0','')),
                 0)
             where cf.last_update_time > '{}'
@@ -307,8 +307,8 @@ class CarScore(object):
         sql = '''select o.carid car_id,
             count(if(ptime>0,id,null)) recent_paid,
             count(if(status='cancelled' and status_ext=2,id,null)) recent_cancelled_renter,
-            count(if(status='cancelled' and status_ext=5),id,null)) recent_cancelled_owner,
-            count(if(status='cancelled' and status_ext=15),id,null)) recent_paid_cancelled_owner
+            count(if(status='cancelled' and status_ext=5,id,null)) recent_cancelled_owner,
+            count(if(status='cancelled' and status_ext=15,id,null)) recent_paid_cancelled_owner
             from orders o
             join (
                 select distinct(carid) car_id
