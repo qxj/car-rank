@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:51:25>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 12:47:49>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -519,11 +519,11 @@ def main():
     if args.cars:
         cars = args.cars.strip().split(',')
 
-    if args.action == 'prepare':
-        with CarScore(before_mins=before_minutes,
-                      throttling_num=args.throttling,
-                      checkpoint_file=args.checkpoint,
-                      cars=cars) as cs:
+    with CarScore(before_mins=before_minutes,
+                  throttling_num=args.throttling,
+                  checkpoint_file=args.checkpoint,
+                  cars=cars) as cs:
+        if args.action == 'prepare':
             cs.sync_cars()
             cs.update_verified_time()
             cs.update_proportion()
@@ -532,10 +532,7 @@ def main():
             cs.update_orders()
             cs.update_accept()
             cs.update_car_info()
-    elif args.action == 'run':
-        with CarScore(before_mins=before_minutes,
-                      throttling_num=args.throttling,
-                      checkpoint_file=args.checkpoint) as cs:
+        elif args.action == 'run':
             cs.update_scores()
 
     logger.info('================')
