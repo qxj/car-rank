@@ -8,15 +8,19 @@ log() {
     echo "[$dt] $1"
 }
 
+die() {
+    log $1
+    exit 1
+}
+
 update() {
     # update run every 5 mins
     log "calculate car scores ..."
-    # (
-    #     flock -xn 200
-    #     ./car_score.py prepare
-    #     ./car_score.py run
-    # ) 200>/tmp/update_scores.lck
-    flock -xn /tmp/update_scores.lck -c "./car_score.py prepare --checkpoint checkpoint.prepare && ./car_score.py run --checkpoint checkpoint.run"
+    (
+        flock -xn 200 || die "Another instance is running.."
+        ./car_score.py prepare --checkpoint checkpoint.prepare
+        ./car_score.py run --checkpoint checkpoint.run
+    ) 200>/tmp/update_scores.lck
 }
 
 update_all() {
@@ -25,18 +29,19 @@ update_all() {
         days=365
     fi
     before=$(echo 60*24*$days | bc -l) # before one year
-    flock -xn /tmp/update_scores.lck -c "./car_score.py prepare --throttling 500 --before $before  --checkpoint checkpoint.prepare && ./car_score.py run --throttling 500 --before $before  --checkpoint checkpoint.run"
-    if [[ $? -ne 0 ]]; then
-        log "Another instance is running.."
-    fi
+    (
+        flock -xn 200 || die "Another instance is running.."
+        ./car_score.py prepare --throttling 500 --before $before  --checkpoint checkpoint.prepare
+        ./car_score.py run --throttling 500 --before $before  --checkpoint checkpoint.run
+    ) 200>/tmp/update_scores.lck
 }
 
 calc_scores() {
     before=$(echo 60*24*30*12 | bc -l) # before one year
-    flock -xn /tmp/update_scores.lck -c "./car_score.py run --before $before --checkpoint checkpoint.run"
-    if [[ $? -ne 0 ]]; then
-        log "Another instance is running.."
-    fi
+    (
+        flock -xn 200 || die "Another instance is running.."
+        ./car_score.py run --before $before --checkpoint checkpoint.run
+    ) 200>/tmp/update_scores.lck
 }
 
 case "$1" in
