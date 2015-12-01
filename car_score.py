@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 13:47:44>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:20:01>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -237,7 +237,7 @@ class CarScore(object):
                 if(end>adddate(now(),30),adddate(now(),30),end))) days
                 from orders
                 where ctime>'{}' and
-                ctime>subdate(now,30) and
+                ctime>subdate(now(),30) and
                 status in ('started','paid','paid_offence','confirmed')
                 {}
                 group by carid
