@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:43:38>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:52:48>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -230,24 +230,24 @@ class CarScore(object):
         self.db.commit()
         logger.info('[accept] update %d auto_accept', updated_cnt)
         ## ================8<================
-        sql = '''update car_rank_feats cr
-            join (
-                select carid, sum(timestampdiff(day,
-                if(begin<now(),now(),begin),
-                if(end>adddate(now(),30),adddate(now(),30),end))) days
-                from orders
-                where ctime>'{}' and
-                ctime>subdate(now(),30) and
-                status in ('started','paid','paid_offence','confirmed')
-                {}
-                group by carid
-            ) o on cr.car_id=o.carid
-            set available_days=available_days-o.days
-        '''.format(self.update_time, self._and_cars('carid'))
-        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
-        logger.debug('[accept] sql: %s', sql)
-        self.db.commit()
-        logger.info('[accept] update %d avaiable days', updated_cnt)
+        # sql = '''update car_rank_feats cr
+        #     join (
+        #         select carid, sum(timestampdiff(day,
+        #         if(begin<now(),now(),begin),
+        #         if(end>adddate(now(),30),adddate(now(),30),end))) days
+        #         from orders
+        #         where ctime>'{}' and
+        #         ctime>subdate(now(),30) and
+        #         status in ('started','paid','paid_offence','confirmed')
+        #         {}
+        #         group by carid
+        #     ) o on cr.car_id=o.carid
+        #     set available_days=available_days-o.days
+        # '''.format(self.update_time, self._and_cars('carid'))
+        # updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        # logger.debug('[accept] sql: %s', sql)
+        # self.db.commit()
+        # logger.info('[accept] update %d avaiable days', updated_cnt)
 
     # `recent_rejected` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的拒单数',
     # `recent_accepted` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的接单数',
