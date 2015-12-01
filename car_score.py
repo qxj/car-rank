@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:45:48>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:51:25>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -453,6 +453,7 @@ class CarScore(object):
             from car_rank_feats
             where update_time>'{}'
         '''.format(self.update_time)
+        sql += self._and_cars('car_id')
         rows = self.db.exec_sql(sql)
         scores_list = []
         for row in rows:
