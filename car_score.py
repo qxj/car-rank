@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 12:47:49>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 13:47:44>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -169,21 +169,6 @@ class CarScore(object):
         self.db.commit()
         logger.info('[can_send] update %d car can_send info', updated_cnt)
 
-    def update_can_send1(self):
-        db = mydb.get_db('slave')
-        sql = '''select car_id, owner_can_send owner_send,
-            char_length(owner_can_send_service) owner_send_desc_len,
-            recommend_level from car_rank where update_time > '{}'
-        '''.format(self.update_time)
-        sql += self._and_cars('car_id')
-        rows = db.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            updated_cnt += self._update(row['car_id'], row)
-        self.db.commit()
-        logger.info('[can_send] update %d car can_send info, updated %d rows',
-                    len(rows), updated_cnt)
-
     # `can_send_has_tags` tinyint(1) DEFAULT NULL,
     # `w_review_owner` float DEFAULT NULL COMMENT '3个月内最近10个订单对车主的评价分均分',
     # `w_review_car` float DEFAULT NULL COMMENT '3个月内最近10个订单对车辆的评价分均分',
@@ -230,6 +215,7 @@ class CarScore(object):
                     len(rows), updated_cnt)
 
     # `auto_accept` tinyint(1) DEFAULT NULL COMMENT '是否开启自动接单',
+    # `available_days` int(11) DEFAULT 0 COMMENT '最近一个月内可见可租天数',
     def update_accept(self):
         sql = '''update car_rank_feats cr
             join car_freetime cf on cr.car_id=cf.car_id
@@ -243,21 +229,25 @@ class CarScore(object):
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
         logger.info('[accept] update %d auto_accept', updated_cnt)
-
-    def update_accept1(self):
-        db = mydb.get_db('slave')
-        sql = '''select car_id, if(auto_accept='YES',1,0) auto_accept
-            from car_freetime
-            where last_update_time > '{}'
-        '''.format(self.update_time)
-        sql += self._and_cars('car_id')
-        rows = db.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            updated_cnt += self._update(row['car_id'], row)
+        ## ================8<================
+        sql = '''update car_rank_feats cr
+            join (
+                select carid, sum(timestampdiff(day,
+                if(begin<now(),now(),begin),
+                if(end>adddate(now(),30),adddate(now(),30),end))) days
+                from orders
+                where ctime>'{}' and
+                ctime>subdate(now,30) and
+                status in ('started','paid','paid_offence','confirmed')
+                {}
+                group by carid
+            ) o on cr.car_id=o.carid
+            set available_days=available_days-o.days
+        '''.format(self.update_time, self._and_cars('carid'))
+        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        logger.debug('[accept] sql: %s', sql)
         self.db.commit()
-        logger.info('[accept] update %d auto_accept, affected %d rows',
-                    len(rows), updated_cnt)
+        logger.info('[accept] update %d avaiable days', updated_cnt)
 
     # `recent_rejected` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的拒单数',
     # `recent_accepted` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的接单数',
