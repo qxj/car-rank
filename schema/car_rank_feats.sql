@@ -16,10 +16,11 @@ CREATE TABLE `car_rank_feats` (
   `pic_num` int(11) unsigned DEFAULT 0 COMMENT '车辆图片数',
   `desc_len` int(11) unsigned DEFAULT 0 '车辆描述字符数',
   `recent_cancelled_owner` int(11) DEFAULT 0 COMMENT '最近一个月内车主取消订单数',
-  `recent_paid_cancelled_owner` int(11) DEFAULT 0 COMMENT '最近一个月内车主取消第二笔支付后订单数',
+  `recent_paid_cancelled_owner` int(11) DEFAULT 0 COMMENT '最近一个月内车主取消支付后订单车主取消数',
   `recent_paid` int(11) DEFAULT 0 COMMENT '最近支付订单数',
   `recent_cancelled_renter` int(11) DEFAULT 0 COMMENT '1个月内最后10个支付后订单租客取消数',
   `verified_time`  datetime DEFAULT NULL COMMENT 'car.cs_verify>0 -> car.verified_time',
+  `available_days` int(11) DEFAULT 0 COMMENT '最近一个月内可见可租天数',
   `manual_weight` int(11) DEFAULT 0 COMMENT '运营人工权重',
   `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`car_id`)

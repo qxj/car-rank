@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-11-30 14:06:38>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:28:42>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -28,7 +28,8 @@ logger = None
 
 class CarScore(object):
     def __init__(self, before_mins=0, throttling_num=0,
-                 checkpoint_file='./car_score.cp'):
+                 checkpoint_file='./car_score.cp',
+                 cars=[]):
         self.db = mydb.get_db('master')
         self.db_score = mydb.get_db('master')
         # yesterday this time
@@ -38,6 +39,7 @@ class CarScore(object):
         # checkpoint properties
         self.current_time = datetime.datetime.now()
         self.checkpoint_file = checkpoint_file
+        self.cars = cars
 
     def __enter__(self):
         return self
@@ -97,6 +99,9 @@ class CarScore(object):
         self.db_score.commit()
         return updated_cnt
 
+    def _and_cars(self, field):
+        return ' and {} in ({})'.format(field, ','.join(self.cars)) if self.cars else ''
+
     def sync_cars(self):
         sql = '''insert into car_rank_feats(car_id)
             select
@@ -124,6 +129,7 @@ class CarScore(object):
             set cf.verified_time=c.verified_time
             where c.updated_on > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('c.id')
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
         logger.info('[can_send] update %d car verified_time', updated_cnt)
@@ -135,6 +141,7 @@ class CarScore(object):
             from car_owner_price
             where update_time > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('car_id')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -157,6 +164,7 @@ class CarScore(object):
             cf.recommend_level=cr.recommend_level
             where cr.update_time > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('cr.car_id')
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
         logger.info('[can_send] update %d car can_send info', updated_cnt)
@@ -167,6 +175,7 @@ class CarScore(object):
             char_length(owner_can_send_service) owner_send_desc_len,
             recommend_level from car_rank where update_time > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('car_id')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -183,6 +192,7 @@ class CarScore(object):
         sql = '''select distinct(carid) car_id
             from order_reviews where date_created>'{}'
         '''.format(self.update_time)
+        sql += self._and_cars('carid')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -201,7 +211,7 @@ class CarScore(object):
             has_tags = 0
             for i, irow in enumerate(irows):
                 review_cnt += 1
-                if i < 2 and irow['is_send_car']: # only consider recent two tags
+                if i < 2 and irow['is_send_car'] > 0: # only consider recent two tags
                     has_tags = 1
                 owner_score += (irow['friendly_score'] + irow['punctual_score'])
                 car_score += (irow['car_performance_score'] + irow['car_condition_score'])
@@ -222,9 +232,13 @@ class CarScore(object):
     def update_accept(self):
         sql = '''update car_rank_feats cr
             join car_freetime cf on cr.car_id=cf.car_id
-            set cr.auto_accept=if(cf.auto_accept='YES',1,0)
+            set cr.auto_accept=if(cf.auto_accept='YES',1,0),
+            set cr.available_days=if(cf.status=1,
+                length(replace(substring(cf.freetime,1,30),'0','')),
+                0)
             where cf.last_update_time > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('cf.car_id')
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
         logger.info('[accept] update %d auto_accept', updated_cnt)
@@ -235,6 +249,7 @@ class CarScore(object):
             from car_freetime
             where last_update_time > '{}'
         '''.format(self.update_time)
+        sql += self._and_cars('car_id')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -253,6 +268,7 @@ class CarScore(object):
         sql = '''select distinct(carid) car_id
             from orders where mtime> '{}' and rtime>0
         '''.format(self.update_time)
+        sql += self._and_cars('carid')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -279,6 +295,7 @@ class CarScore(object):
                         accepted_cnt += days
                         logger.debug('[accept] car %d long order %d (%d) add extra %d days',
                                      car_id, irow['order_id'], irow['days'], days)
+            accepted_cnt = min(accepted_cnt, 10)
             updated_cnt += self._update(car_id,
                                         {'recent_rejected': rejected_cnt,
                                          'recent_accepted': accepted_cnt})
@@ -290,16 +307,18 @@ class CarScore(object):
         sql = '''select o.carid car_id,
             count(if(ptime>0,id,null)) recent_paid,
             count(if(status='cancelled' and status_ext=2,id,null)) recent_cancelled_renter,
-            count(if(status='cancelled' and status_ext in (5,15),id,null)) recent_cancelled_owner
+            count(if(status='cancelled' and status_ext=5),id,null)) recent_cancelled_owner,
+            count(if(status='cancelled' and status_ext=15),id,null)) recent_paid_cancelled_owner
             from orders o
             join (
                 select distinct(carid) car_id
                 from orders where mtime>'{}' and status='cancelled'
                     and status_ext in (2,5,15)
+                    {}
             ) oc on o.carid=oc.car_id
             where o.ctime>subdate(curdate(),30)
             group by o.carid
-        '''.format(self.update_time)
+        '''.format(self.update_time, self._and_cars('carid'))
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -320,6 +339,7 @@ class CarScore(object):
             from car
             where updated_on>'{}'
         '''.format(self.update_time)
+        sql += self._and_cars('id')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -332,6 +352,10 @@ class CarScore(object):
         self.db.commit()
         logger.info('[car_info] update %d car_info, affected %d rows',
                     len(rows), updated_cnt)
+
+    def update_available(self):
+        db = mydb.get_db('slave')
+
 
     def _calc_score(self, row):
         scores = {}
@@ -472,6 +496,7 @@ def main():
                         help='checkpoint file to save latest update timestamp')
     parser.add_argument('--before', type=int, default=10,
                         help='before minutes to update')
+    parser.add_argument('--cars', type=str, help='test car ids, splited by comma')
     parser.add_argument('--dry', action='store_true', help='whether dry run')
     parser.add_argument('--verbose', action='store_true', help='verbose log')
     args = parser.parse_args()
@@ -485,10 +510,15 @@ def main():
 
     logger.info('[start] car_score args: %s', args)
 
+    cars = []
+    if args.cars:
+        cars = args.cars.strip().split(',')
+
     if args.action == 'prepare':
         with CarScore(before_mins=before_minutes,
                       throttling_num=args.throttling,
-                      checkpoint_file=args.checkpoint) as cs:
+                      checkpoint_file=args.checkpoint,
+                      cars=cars) as cs:
             cs.sync_cars()
             cs.update_verified_time()
             cs.update_proportion()
