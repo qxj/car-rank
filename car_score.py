@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:20:01>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:43:38>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -435,7 +435,9 @@ class CarScore(object):
         if row['owner_send'] and row['owner_send_desc_len'] > 15:
             rows['w_send'] = 0.5
         if row['owner_send_has_tags']:
-            rows['w_send'] = 1
+            rows['w_send'] += 1
+        if row['owner_send_distance'] >= 5:
+            rows['w_send'] += 0.5
         return rows
 
     def update_scores(self):
