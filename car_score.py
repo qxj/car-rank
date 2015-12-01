@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:41:37>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 11:45:48>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -193,6 +193,7 @@ class CarScore(object):
             from order_reviews where date_created>'{}'
         '''.format(self.update_time)
         sql += self._and_cars('carid')
+        logger.debug('[review] sql: %s', sql)
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -223,7 +224,7 @@ class CarScore(object):
                     'review_owner': os,
                     'review_car': cs}
             updated_cnt += self._update(car_id, data)
-            logger.debug('[tags] car %d review: %s ', car_id, data)
+            logger.debug('[review] car %d review: %s ', car_id, data)
         self.db.commit()
         logger.info('[review] update %d car tags info, affected %d rows.',
                     len(rows), updated_cnt)
@@ -502,9 +503,12 @@ def main():
     args = parser.parse_args()
 
     log_level = logging.INFO
+    logtostderr = False
     if args.verbose:
         log_level = logging.DEBUG
-    logger = init_log(logtofile='car_score.log', level=log_level)
+        logtostderr = True
+    logger = init_log(logtofile='car_score.log', level=log_level,
+                      logtostderr=logtostderr)
 
     before_minutes = args.before
 
