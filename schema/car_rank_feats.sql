@@ -14,7 +14,7 @@ CREATE TABLE `car_rank_feats` (
   `review_car` float DEFAULT 0 COMMENT '3个月内最近10个订单对车辆的评价分均分',
   `recommend_level` smallint(4) DEFAULT 0 COMMENT '车辆推荐等级 car_rank.recommend_level',
   `pic_num` int(11) unsigned DEFAULT 0 COMMENT '车辆图片数',
-  `desc_len` int(11) unsigned DEFAULT 0 '车辆描述字符数',
+  `desc_len` int(11) unsigned DEFAULT 0 COMMENT '车辆描述字符数',
   `recent_cancelled_owner` int(11) DEFAULT 0 COMMENT '最近一个月内车主取消订单数',
   `recent_paid_cancelled_owner` int(11) DEFAULT 0 COMMENT '最近一个月内车主取消支付后订单车主取消数',
   `recent_paid` int(11) DEFAULT 0 COMMENT '最近支付订单数',

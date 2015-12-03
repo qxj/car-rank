@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-01 14:52:48>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-03 16:42:49>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -29,9 +29,8 @@ logger = None
 class CarScore(object):
     def __init__(self, before_mins=0, throttling_num=0,
                  checkpoint_file='./car_score.cp',
-                 cars=[]):
-        self.db = mydb.get_db('master')
-        self.db_score = mydb.get_db('master')
+                 cars=[], is_test=False):
+        self.db = self._get_db('master', is_test)
         # yesterday this time
         self.update_time = self._update_time(checkpoint_file, before_mins)
         logger.info('[init] update time: %s', self.update_time)
@@ -41,12 +40,23 @@ class CarScore(object):
         self.checkpoint_file = checkpoint_file
         self.cars = cars
 
+    def _get_db(self, flag, is_test=False):
+        db_names = { 'master': 'master',
+                     'score': 'master',
+                     'price': 'price',
+                     'slave': 'slave' }
+        if is_test:
+            db_names = { 'master': 'test28',
+                         'score': 'test28',
+                         'price': 'test28',
+                         'slave': 'test28' }
+        return mydb.get_db(db_names[flag])
+
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
         self.db.commit()
-        self.db_score.commit()
         # sync checkpoint if everything ok
         self.set_checkpoint()
         logger.info('exit car score instance, and set checkpoint.')
@@ -82,8 +92,8 @@ class CarScore(object):
 
     def _write_score(self, value_dict):
         self.throttling.check()
-        return self.db_score.insert('car_rank_score', value_dict,
-                                    on_duplicate_ignore=False)
+        return self.db.insert('car_rank_score', value_dict,
+                              on_duplicate_ignore=False)
 
     def _write_scores(self, value_dict_list):
         updated_cnt = 0
@@ -92,11 +102,11 @@ class CarScore(object):
         batch_num = 100
         while idx < dlen:
             if idx % batch_num == 0:
-                updated_cnt += self.db_score.insert_many(
+                updated_cnt += self.db.insert_many(
                     'car_rank_score', value_dict_list[idx:idx+batch_num],
                     on_duplicate_ignore=False)
             idx += 1
-        self.db_score.commit()
+        self.db.commit()
         return updated_cnt
 
     def _and_cars(self, field):
@@ -136,7 +146,7 @@ class CarScore(object):
 
     # `proportion` float DEFAULT NULL COMMENT 'car_owner_price.proportion',
     def update_proportion(self):
-        db = mydb.get_db('price')
+        db = self._get_db('price')
         sql = '''select car_id, proportion
             from car_owner_price
             where update_time > '{}'
@@ -173,7 +183,7 @@ class CarScore(object):
     # `w_review_owner` float DEFAULT NULL COMMENT '3个月内最近10个订单对车主的评价分均分',
     # `w_review_car` float DEFAULT NULL COMMENT '3个月内最近10个订单对车辆的评价分均分',
     def update_review(self):
-        db = mydb.get_db('slave')
+        db = self._get_db('slave')
         sql = '''select distinct(carid) car_id
             from order_reviews where date_created>'{}'
         '''.format(self.update_time)
@@ -254,7 +264,7 @@ class CarScore(object):
     # `recent_cancelled_owner` int(11) DEFAULT NULL COMMENT '最近一个月内车主取消订单数',
     # `recent_cancelled_renter` int(11) DEFAULT NULL COMMENT '1个月内最后10个支付后订单(不包含接收后订单)租客取消数',
     def update_orders(self):
-        db = mydb.get_db('slave')
+        db = self._get_db('slave')
         ## recent action (rejected/accepted)
         sql = '''select distinct(carid) car_id
             from orders where mtime> '{}' and rtime>0
@@ -324,7 +334,7 @@ class CarScore(object):
     # `pic_num` int(11) DEFAULT NULL,
     # `desc_len` int(11) DEFAULT NULL,
     def update_car_info(self):
-        db = mydb.get_db('slave')
+        db = self._get_db('slave')
         sql = '''select id car_id,
             photos, char_length(description) desc_len
             from car
@@ -343,10 +353,6 @@ class CarScore(object):
         self.db.commit()
         logger.info('[car_info] update %d car_info, affected %d rows',
                     len(rows), updated_cnt)
-
-    def update_available(self):
-        db = mydb.get_db('slave')
-
 
     def _calc_score(self, row):
         scores = {}
@@ -491,7 +497,7 @@ def main():
     parser.add_argument('--before', type=int, default=10,
                         help='before minutes to update')
     parser.add_argument('--cars', type=str, help='test car ids, splited by comma')
-    parser.add_argument('--dry', action='store_true', help='whether dry run')
+    parser.add_argument('--test', action='store_true', help='deploy on test environment')
     parser.add_argument('--verbose', action='store_true', help='verbose log')
     args = parser.parse_args()
 
@@ -514,7 +520,7 @@ def main():
     with CarScore(before_mins=before_minutes,
                   throttling_num=args.throttling,
                   checkpoint_file=args.checkpoint,
-                  cars=cars) as cs:
+                  cars=cars, is_test=args.test) as cs:
         if args.action == 'prepare':
             cs.sync_cars()
             cs.update_verified_time()
