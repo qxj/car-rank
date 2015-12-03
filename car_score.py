@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-03 16:42:49>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-03 16:59:37>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -30,7 +30,8 @@ class CarScore(object):
     def __init__(self, before_mins=0, throttling_num=0,
                  checkpoint_file='./car_score.cp',
                  cars=[], is_test=False):
-        self.db = self._get_db('master', is_test)
+        self.is_test = is_test
+        self.db = self._get_db('master')
         # yesterday this time
         self.update_time = self._update_time(checkpoint_file, before_mins)
         logger.info('[init] update time: %s', self.update_time)
@@ -40,12 +41,12 @@ class CarScore(object):
         self.checkpoint_file = checkpoint_file
         self.cars = cars
 
-    def _get_db(self, flag, is_test=False):
+    def _get_db(self, flag):
         db_names = { 'master': 'master',
                      'score': 'master',
                      'price': 'price',
                      'slave': 'slave' }
-        if is_test:
+        if self.is_test:
             db_names = { 'master': 'test28',
                          'score': 'test28',
                          'price': 'test28',

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_price.py  Time-stamp: <Julian Qian 2015-11-26 14:25:38>
+# @(#) car_price.py  Time-stamp: <Julian Qian 2015-12-03 17:00:53>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_price.py,v 0.1 2015-11-19 13:13:25 jqian Exp $
@@ -14,6 +14,7 @@ run in midnight at crontab
 from __future__ import division
 import sys
 import datetime
+import argparse
 
 sys.path.append('./pdlib/py')
 import mydb
@@ -23,6 +24,19 @@ logger = init_log('car_price.log')
 
 
 class CarPrice(object):
+    def __init__(self, is_test):
+        self.is_test = is_test
+
+    def _get_db(self, flag, is_test=False):
+        db_names = { 'master': 'master',
+                     'price': 'price',
+                     'slave': 'slave' }
+        if self.is_test:
+            db_names = { 'master': 'test28',
+                         'price': 'test28',
+                         'slave': 'test28' }
+        return mydb.get_db(db_names[flag])
+
     def sync(self, batch_num=100):
         ds = datetime.date.today() - datetime.timedelta(1)
         sql = '''select car_id,
@@ -33,9 +47,9 @@ class CarPrice(object):
         from stats_daily_price_snapshot
         where date='{}'
         '''.format('%s' % ds)
-        db_price = mydb.get_db('price')
+        db_price = self._get_db('price')
         rows = db_price.exec_sql(sql)
-        db = mydb.get_db('master')
+        db = self._get_db('master')
         batch = []
         updated_cnt = 0
         for row in rows:
@@ -54,7 +68,7 @@ class CarPrice(object):
         join car_rank_price cp on cf.car_id=cp.car_id
         set cf.suggest_price=cp.suggest_price
         '''
-        db = mydb.get_db('master')
+        db = self._get_db('master')
         updated_cnt = db.exec_sql(sql)
         logger.info('update %d car feats', updated_cnt)
 
@@ -65,7 +79,7 @@ class CarPrice(object):
         from car_rank_price
         where update_time> '{}'
         '''.format(ds)
-        db = mydb.get_db('master')
+        db = self._get_db('master')
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
@@ -75,7 +89,11 @@ class CarPrice(object):
 
 
 def main():
-    cp = CarPrice()
+    parser = argparse.ArgumentParser(description='sync price tables')
+    parser.add_argument('--test', action='store_true', help='deploy on test environment')
+    args = parser.parse_args()
+
+    cp = CarPrice(args.test)
     cp.sync()
     cp.update_price_all()
 
