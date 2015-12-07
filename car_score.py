@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-03 16:59:37>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-07 11:14:17>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -418,7 +418,7 @@ class CarScore(object):
             ddays = datetime.datetime.today() - row['verified_time']
             days = ddays.days
         if days > 30:
-            if row['pic_num'] < 4:
+            if row['pic_num'] < 2:
                 punish += 10
             if row['desc_len'] < 100:
                 punish += 10
