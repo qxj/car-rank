@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-07 11:14:17>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-09 15:43:08>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -365,22 +365,26 @@ class CarScore(object):
         if suggest_price <= 200:
             low = (30, -20)
             lot = (0.8, 1.1, 1.3, 1.6)
-            if proportion <= lot[0]:
+            if proportion < lot[0]:
                 scores['w_price'] = low[0]
-            elif lot[0] < proportion < lot[1]:
+            elif lot[0] <= proportion <= lot[1]:
                 scores['w_price'] = low[0]*(lot[1]-proportion)/(lot[1]-lot[0])
-            elif lot[2] < proportion < lot[3]:
+            elif lot[1] < proportion < lot[2]:
+                scores['w_price'] = 0
+            elif lot[2] <= proportion <= lot[3]:
                 scores['w_price'] = low[1]*(proportion-lot[2])/(lot[3]-lot[2])
             else:
                 scores['w_price'] = low[1]
         else:
             hiw = (30, -30)
             hit = (0.7, 1.15, 1.25, 1.6)
-            if proportion <= hit[0]:
+            if proportion < hit[0]:
                 scores['w_price'] = hiw[0]
-            elif hit[0] < proportion < hit[1]:
+            elif hit[0] <= proportion <= hit[1]:
                 scores['w_price'] = hiw[0]*(hit[1]-proportion)/(hit[1]-hit[0])
-            elif hit[2] < proportion < hit[3]:
+            elif hit[1] < proportion < hit[2]:
+                scores['w_price'] = 0
+            elif hit[2] <= proportion <= hit[3]:
                 scores['w_price'] = hiw[1]*(proportion-hit[2])/(hit[3]-hit[2])
             else:
                 scores['w_price'] = hiw[1]
