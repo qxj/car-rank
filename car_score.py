@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-09 15:43:08>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-11 17:12:43>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -314,8 +314,9 @@ class CarScore(object):
             from orders o
             join (
                 select distinct(carid) car_id
-                from orders where mtime>'{}' and status='cancelled'
-                    and status_ext in (2,5,15)
+                from orders where mtime>'{}' and
+                ( (status='cancelled' and status_ext in (2,5,15)) or
+                  ptime>0)
                     {}
             ) oc on o.carid=oc.car_id
             where o.ctime>subdate(curdate(),30)
@@ -325,9 +326,8 @@ class CarScore(object):
         updated_cnt = 0
         for row in rows:
             updated_cnt += self._update(row['car_id'], row)
-            logger.debug('[accept] car %d recent cancelled, owner %d, renter %d',
-                         row['car_id'], row['recent_cancelled_owner'],
-                         row['recent_cancelled_renter'])
+            logger.debug('[accept] car %d recent cancelled, owner %d',
+                         row['car_id'], row['recent_cancelled_owner'])
         logger.info('[accept] update %d recent cancelled, affected %d rows',
                     len(rows), updated_cnt)
         self.db.commit()
