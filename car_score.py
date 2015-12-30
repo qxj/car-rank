@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-11 17:12:43>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-30 16:10:17>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -27,6 +27,7 @@ logger = None
 
 
 class CarScore(object):
+
     def __init__(self, before_mins=0, throttling_num=0,
                  checkpoint_file='./car_score.cp',
                  cars=[], is_test=False):
@@ -42,15 +43,15 @@ class CarScore(object):
         self.cars = cars
 
     def _get_db(self, flag):
-        db_names = { 'master': 'master',
-                     'score': 'master',
-                     'price': 'price',
-                     'slave': 'slave' }
+        db_names = {'master': 'master',
+                    'score': 'master',
+                    'price': 'price',
+                    'slave': 'slave'}
         if self.is_test:
-            db_names = { 'master': 'test28',
-                         'score': 'test28',
-                         'price': 'test28',
-                         'slave': 'test28' }
+            db_names = {'master': 'test28',
+                        'score': 'test28',
+                        'price': 'test28',
+                        'slave': 'test28'}
         return mydb.get_db(db_names[flag])
 
     def __enter__(self):
@@ -74,7 +75,7 @@ class CarScore(object):
         ts = None
         if before_minutes > 0:
             ts = datetime.datetime.today() - \
-                 datetime.timedelta(minutes=before_minutes)
+                datetime.timedelta(minutes=before_minutes)
         else:
             try:
                 with open(checkpoint_file) as fp:
@@ -91,12 +92,12 @@ class CarScore(object):
         self.throttling.check()
         return self.db.update('car_rank_feats', {'car_id': car_id}, value_dict)
 
-    def _write_score(self, value_dict):
+    def _write_score(self, value_dict, table_name='car_rank_score'):
         self.throttling.check()
-        return self.db.insert('car_rank_score', value_dict,
+        return self.db.insert(table_name, value_dict,
                               on_duplicate_ignore=False)
 
-    def _write_scores(self, value_dict_list):
+    def _write_scores(self, value_dict_list, table_name='car_rank_score'):
         updated_cnt = 0
         dlen = len(value_dict_list)
         idx = 0
@@ -104,7 +105,7 @@ class CarScore(object):
         while idx < dlen:
             if idx % batch_num == 0:
                 updated_cnt += self.db.insert_many(
-                    'car_rank_score', value_dict_list[idx:idx+batch_num],
+                    table_name, value_dict_list[idx:idx + batch_num],
                     on_duplicate_ignore=False)
             idx += 1
         self.db.commit()
@@ -114,9 +115,10 @@ class CarScore(object):
         return ' and {} in ({})'.format(field, ','.join(self.cars)) if self.cars else ''
 
     def sync_cars(self):
-        sql = '''insert into car_rank_feats(car_id)
+        sql = '''insert into car_rank_feats(car_id, city_code)
             select
-            c.id as car_id
+            c.id as car_id,
+            city_code
             from car c
             left join car_rank_feats cr on c.id=cr.car_id
             where cr.car_id is null and c.status='active'
@@ -134,16 +136,39 @@ class CarScore(object):
         # logger.info("[sync] remove %d obsolote cars", affected_rows)
         self.db.commit()
 
-    def update_verified_time(self):
+    # `pic_num` int(11) DEFAULT NULL,
+    # `desc_len` int(11) DEFAULT NULL,
+    def update_cars(self):
         sql = '''update car_rank_feats cf
             join car c on c.id=cf.car_id
-            set cf.verified_time=c.verified_time
+            set cf.verified_time=c.verified_time,
+                cf.city_code=c.city_code
             where c.updated_on > '{}'
         '''.format(self.update_time)
         sql += self._and_cars('c.id')
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
-        logger.info('[can_send] update %d car verified_time', updated_cnt)
+        logger.info('[can_send] update %d car info', updated_cnt)
+        # update photo number and desc length
+        db = self._get_db('slave')
+        sql = '''select id car_id,
+            photos, char_length(description) desc_len
+            from car
+            where updated_on>'{}'
+        '''.format(self.update_time)
+        sql += self._and_cars('id')
+        rows = db.exec_sql(sql)
+        updated_cnt = 0
+        for row in rows:
+            pic_num = len(filter(lambda x: x, row['photos'].split(',')))
+            updated_cnt += self._update(row['car_id'],
+                                        {'pic_num': pic_num,
+                                         'desc_len': row['desc_len']})
+            logger.debug('[accept] car %d pic_num %d, desc_len %d',
+                         row['car_id'], pic_num, row['desc_len'])
+        self.db.commit()
+        logger.info('[car_info] update %d car_info, affected %d rows',
+                    len(rows), updated_cnt)
 
     # `proportion` float DEFAULT NULL COMMENT 'car_owner_price.proportion',
     def update_proportion(self):
@@ -208,22 +233,39 @@ class CarScore(object):
             has_tags = 0
             for i, irow in enumerate(irows):
                 review_cnt += 1
-                if i < 2 and irow['is_send_car'] > 0: # only consider recent two tags
+                if i < 2 and irow['is_send_car'] > 0:  # only consider recent two tags
                     has_tags = 1
-                owner_score += (irow['friendly_score'] + irow['punctual_score'])
-                car_score += (irow['car_performance_score'] + irow['car_condition_score'])
+                owner_score += (irow['friendly_score'] +
+                                irow['punctual_score'])
+                car_score += (irow['car_performance_score'] +
+                              irow['car_condition_score'])
             os = cs = 0
             if review_cnt > 0:
-                os = owner_score/review_cnt/2
-                cs = car_score/review_cnt/2
+                os = owner_score / review_cnt / 2
+                cs = car_score / review_cnt / 2
             data = {'owner_send_has_tags': has_tags,
                     'review_owner': os,
                     'review_car': cs}
             updated_cnt += self._update(car_id, data)
             logger.debug('[review] car %d review: %s ', car_id, data)
-        self.db.commit()
         logger.info('[review] update %d car tags info, affected %d rows.',
                     len(rows), updated_cnt)
+        # review count
+        sql = '''update car_rank_feats cf
+            join (
+                select o.carid, count(id) cnt
+                from order_reviews o join
+                (
+                    select distinct(carid) carid
+                    from order_reviews where date_created>'{}'
+                ) oo on oo.carid=o.carid
+                group by o.carid
+            ) r on r.carid=cf.car_id
+            set cf.review_cnt=r.cnt
+        '''.format(self.update_time)
+        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        logger.info('[review] update %d review cnt', updated_cnt)
+        self.db.commit()
 
     # `auto_accept` tinyint(1) DEFAULT NULL COMMENT '是否开启自动接单',
     # `available_days` int(11) DEFAULT 0 COMMENT '最近一个月内可见可租天数',
@@ -240,7 +282,7 @@ class CarScore(object):
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         self.db.commit()
         logger.info('[accept] update %d auto_accept', updated_cnt)
-        ## ================8<================
+        # ================8<================
         # sql = '''update car_rank_feats cr
         #     join (
         #         select carid, sum(timestampdiff(day,
@@ -266,7 +308,7 @@ class CarScore(object):
     # `recent_cancelled_renter` int(11) DEFAULT NULL COMMENT '1个月内最后10个支付后订单(不包含接收后订单)租客取消数',
     def update_orders(self):
         db = self._get_db('slave')
-        ## recent action (rejected/accepted)
+        # recent action (rejected/accepted)
         sql = '''select distinct(carid) car_id
             from orders where mtime> '{}' and rtime>0
         '''.format(self.update_time)
@@ -290,9 +332,9 @@ class CarScore(object):
                     rejected_cnt += 1
                     users.add(irow['uid'])
                 elif irow['status'] != 'rejected' and \
-                     irow['rtime'] and irow['status_ext'] != 5:
+                        irow['rtime'] and irow['status_ext'] != 5:
                     accepted_cnt += 1
-                    days = min(int(irow['days']/3), 3)
+                    days = min(int(irow['days'] / 3), 3)
                     if days > 0:
                         accepted_cnt += days
                         logger.debug('[accept] car %d long order %d (%d) add extra %d days',
@@ -305,12 +347,17 @@ class CarScore(object):
                          car_id, rejected_cnt, accepted_cnt)
         logger.info('[accept] update %d recent_rejected, affected %d rows',
                     len(rows), updated_cnt)
-        ## recent cancelled (owner/renter)
+        # recent cancelled (owner/renter)
         sql = '''select o.carid car_id,
-            count(if(ptime>0,id,null)) recent_paid,
-            count(if(status='cancelled' and status_ext=2,id,null)) recent_cancelled_renter,
-            count(if(status='cancelled' and status_ext=5,id,null)) recent_cancelled_owner,
-            count(if(status='cancelled' and status_ext=15,id,null)) recent_paid_cancelled_owner
+            count(if(ptime>0 and o.ctime>subdate(curdate(),30),id,null)) recent_paid,
+            count(if(ptime>0 and o.ctime>subdate(curdate(),60),id,null)) recent_paid1,
+            count(if(ptime>0 and o.ctime>subdate(curdate(),7),id,null)) recent_paid2,
+            count(if(status='completed' and o.ctime>subdate(curdate(),30),id,null)) recent_completed,
+            count(if(status='completed' and o.ctime>subdate(curdate(),60),id,null)) recent_completed1,
+            count(if(status='completed' and o.ctime>subdate(curdate(),7),id,null)) recent_completed2,
+            count(if(status='cancelled' and status_ext=2 and o.ctime>subdate(curdate(),30),id,null)) recent_cancelled_renter,
+            count(if(status='cancelled' and status_ext=5 and o.ctime>subdate(curdate(),30),id,null)) recent_cancelled_owner,
+            count(if(status='cancelled' and status_ext=15 and o.ctime>subdate(curdate(),30),id,null)) recent_paid_cancelled_owner
             from orders o
             join (
                 select distinct(carid) car_id
@@ -319,7 +366,7 @@ class CarScore(object):
                   ptime>0)
                     {}
             ) oc on o.carid=oc.car_id
-            where o.ctime>subdate(curdate(),30)
+            where o.ctime>subdate(curdate(),60)
             group by o.carid
         '''.format(self.update_time, self._and_cars('carid'))
         rows = db.exec_sql(sql)
@@ -331,29 +378,6 @@ class CarScore(object):
         logger.info('[accept] update %d recent cancelled, affected %d rows',
                     len(rows), updated_cnt)
         self.db.commit()
-
-    # `pic_num` int(11) DEFAULT NULL,
-    # `desc_len` int(11) DEFAULT NULL,
-    def update_car_info(self):
-        db = self._get_db('slave')
-        sql = '''select id car_id,
-            photos, char_length(description) desc_len
-            from car
-            where updated_on>'{}'
-        '''.format(self.update_time)
-        sql += self._and_cars('id')
-        rows = db.exec_sql(sql)
-        updated_cnt = 0
-        for row in rows:
-            pic_num = len(filter(lambda x:x, row['photos'].split(',')))
-            updated_cnt += self._update(row['car_id'],
-                                        {'pic_num': pic_num,
-                                         'desc_len': row['desc_len']})
-            logger.debug('[accept] car %d pic_num %d, desc_len %d',
-                         row['car_id'], pic_num, row['desc_len'])
-        self.db.commit()
-        logger.info('[car_info] update %d car_info, affected %d rows',
-                    len(rows), updated_cnt)
 
     def _calc_score(self, row):
         scores = {}
@@ -368,11 +392,13 @@ class CarScore(object):
             if proportion < lot[0]:
                 scores['w_price'] = low[0]
             elif lot[0] <= proportion <= lot[1]:
-                scores['w_price'] = low[0]*(lot[1]-proportion)/(lot[1]-lot[0])
+                scores['w_price'] = low[0] * \
+                    (lot[1] - proportion) / (lot[1] - lot[0])
             elif lot[1] < proportion < lot[2]:
                 scores['w_price'] = 0
             elif lot[2] <= proportion <= lot[3]:
-                scores['w_price'] = low[1]*(proportion-lot[2])/(lot[3]-lot[2])
+                scores['w_price'] = low[1] * \
+                    (proportion - lot[2]) / (lot[3] - lot[2])
             else:
                 scores['w_price'] = low[1]
         else:
@@ -381,11 +407,13 @@ class CarScore(object):
             if proportion < hit[0]:
                 scores['w_price'] = hiw[0]
             elif hit[0] <= proportion <= hit[1]:
-                scores['w_price'] = hiw[0]*(hit[1]-proportion)/(hit[1]-hit[0])
+                scores['w_price'] = hiw[0] * \
+                    (hit[1] - proportion) / (hit[1] - hit[0])
             elif hit[1] < proportion < hit[2]:
                 scores['w_price'] = 0
             elif hit[2] <= proportion <= hit[3]:
-                scores['w_price'] = hiw[1]*(proportion-hit[2])/(hit[3]-hit[2])
+                scores['w_price'] = hiw[1] * \
+                    (proportion - hit[2]) / (hit[3] - hit[2])
             else:
                 scores['w_price'] = hiw[1]
             scores['w_price'] += -5
@@ -393,17 +421,17 @@ class CarScore(object):
         if row['auto_accept']:
             scores['w_accept'] = 15
         else:
-            scores['w_accept'] = row['recent_accepted']*1.5
-            scores['w_accept'] -= row['recent_rejected']*1.5
+            scores['w_accept'] = row['recent_accepted'] * 1.5
+            scores['w_accept'] -= row['recent_rejected'] * 1.5
         # review
         scores['w_review_owner'] = 0
         scores['w_review_car'] = 0
         review_owner = row['review_owner']
         if review_owner > 0:
-            scores['w_review_owner'] = 8*(review_owner - 3)/2
+            scores['w_review_owner'] = 8 * (review_owner - 3) / 2
         review_car = row['review_car']
         if review_car > 0:
-            scores['w_review_car'] = 7*(review_car - 3)/2
+            scores['w_review_car'] = 7 * (review_car - 3) / 2
         # recommend
         recommend_level = row['recommend_level']
         scores['w_recommend'] = 0
@@ -430,11 +458,11 @@ class CarScore(object):
             punish += 20
         recent_paid = row['recent_paid']
         recent_cancelled_renter = row['recent_cancelled_renter']
-        if recent_paid > 0 and recent_cancelled_renter/recent_paid > 0.3:
+        if recent_paid > 0 and recent_cancelled_renter / recent_paid > 0.3:
             punish += 20
         scores['w_punish'] = -punish
         # calc car score
-        car_score = reduce(lambda x,y:x+y, scores.itervalues())
+        car_score = reduce(lambda x, y: x + y, scores.itervalues())
         # generate mysql row data
         rows = {}
         for k, v in scores.items():
@@ -450,6 +478,142 @@ class CarScore(object):
         if row['owner_send_distance'] >= 5:
             rows['w_send'] += 0.5
         return rows
+
+    def _calc_score_old(self, row):
+        recommend_weight = 18
+        confirm_weight = 20
+        rented_weight = 8
+        review_weight = 18
+        price_weight = 15
+        newbie_weight = 18 * 2
+
+        scores = {}
+
+        recommend_level = row['recommend_level']
+        if recommend_level == 1:
+            scores['recommend'] = recommend_weight * 0.6
+        elif recommend_level == 2:
+            scores['recommend'] = recommend_weight
+        elif recommend_level == 11:
+            scores['recommend'] = recommend_weight * 2
+        elif recommend_level == -1:
+            scores['recommend'] = recommend_weight * (-2)
+
+        ppnum = row['recent_paid1']
+        pcnum = row['recent_completed1']
+        past_confirm_score = 0
+        mpnum = row['recent_paid']
+        mcnum = row['recent_completed1']
+        month_confirm_score = 0
+        wpnum = row['recent_paid2']
+        wcnum = row['recent_completed2']
+
+        if ppnum < 1:
+            past_confirm_score = 0
+        elif ppnum < 3:
+            past_confirm_score = (pcnum / ppnum) * 0.4 + (ppnum / 30) * 0.6
+        elif ppnum < 6:
+            past_confirm_score = (pcnum / ppnum) * 0.7 + (ppnum / 30) * 0.3
+        else:
+            past_confirm_score = (pcnum / ppnum) * 0.9 + (ppnum / 30) * 0.1
+        if mpnum < 1:
+            month_confirm_score = 0
+        elif mpnum < 3:
+            month_confirm_score = (mcnum / mpnum) * 0.4 + (mpnum / 15) * 0.6
+        elif mpnum < 5:
+            month_confirm_score = (mcnum / mpnum) * 0.7 + (mpnum / 15) * 0.3
+        else:
+            month_confirm_score = (mcnum / mpnum) * 0.9 + (mpnum / 15) * 0.1
+
+        reco_punish_weight = 1
+        if recommend_level > 0:
+            reco_punish_weight = 0.6
+            past_reject_punish = 0
+        if ppnum == 0:
+            past_reject_punish = 8
+        elif ppnum == 1 and pcnum == 0:
+            past_reject_punish = 10
+        elif ppnum == 2 and pcnum == 0:
+            past_reject_punish = 12
+        elif ppnum == 2 and pcnum == 1:
+            past_reject_punish = 4
+        elif ppnum > 2 and ppnum <= 4 and pcnum / ppnum < 0.6:
+            past_reject_punish = (0.6 - pcnum / ppnum) * 18
+        elif ppnum > 4 and pcnum / ppnum < 0.6 and pcnum / ppnum >= 0.5:
+            past_reject_punish = (0.6 - pcnum / ppnum) * 30
+        elif ppnum > 4 and pcnum / ppnum < 0.5 and pcnum / ppnum >= 0.35:
+            past_reject_punish = (0.6 - pcnum / ppnum) * 50 - 2
+        elif ppnum > 4 and pcnum / ppnum < 0.35:
+            past_reject_punish = (0.6 - pcnum / ppnum) * 80 - 9.5
+        past_reject_punish = round(past_reject_punish, 2)
+        week_reject_punish = 0
+        wrnum = wpnum - wcnum
+        if wrnum > 0:
+            week_reject_punish = 7 * wrnum - 4
+        scores['confirm'] = (past_confirm_score * 0.4 +
+                             month_confirm_score * 0.6) * confirm_weight - (
+            past_reject_punish +
+            week_reject_punish) * reco_punish_weight
+
+        # mth_time=row['month_rented_time']
+        # reco_rented_weight=1
+        # if recommend_level>0:
+        #     reco_rented_weight=2
+        # if mth_time<20:
+        #     scores['rented']=(20-mth_time)/20 *rented_weight *reco_rented_weight
+
+        pd = row['proportion'] * row['suggest_price']
+        sp = row['suggest_price']
+        if pd > 0 and sp > 0:
+            if sp - pd >= 0:
+                scores['price'] = round(
+                    (((sp - pd) / sp) * 0.5 + (min((sp - pd), 200) / 200) * 0.5) * price_weight, 2)
+            else:
+                scores['price'] = round(
+                    (((sp - pd) / sp) * 0.5 + (max((sp - pd), -200) / 200) * 0.5) * price_weight, 2)
+
+        days = 0
+        if row['verified_time']:
+            ddays = datetime.datetime.today() - row['verified_time']
+            days = ddays.days
+        if days < 30:
+            scores['newbie'] = newbie_weight
+
+        rp = row['review_car']
+        rc = row['review_cnt']
+        if rc < 1:
+            scores['review'] = 0
+        elif rc < 3:
+            scores['review'] = round(
+                (((rp - 4) / 4) * 0.4 + (rc / 30) * 0.6) * review_weight, 2)
+        elif rc < 5:
+            scores['review'] = round(
+                (((rp - 4) / 4) * 0.7 + (rc / 30) * 0.3) * review_weight, 2)
+        else:
+            scores['review'] = round(
+                (((rp - 4) / 4) * 0.9 + (rc / 30) * 0.1) * review_weight, 2)
+
+        scores['manual'] = row['manual_weight']
+        final_score = reduce(lambda x, y: x + y, scores.itervalues())
+
+        rows = {'final_score': final_score,
+                'car_id': row['car_id']}
+        return rows
+
+    def update_scores_old(self):
+        sql = '''select *
+            from car_rank_feats
+            where update_time>'{}'
+        '''.format(self.update_time)
+        sql += self._and_cars('car_id')
+        rows = self.db.exec_sql(sql)
+        scores_list = []
+        for row in rows:
+            scores = self._calc_score_old(row)
+            logger.debug('[rank] score: %s', scores)
+            scores_list.append(scores)
+        written = self._write_scores(scores_list, 'car_rank')
+        logger.info('[rank] updated %d car rank score old', written)
 
     def update_scores(self):
         sql = '''select *
@@ -468,6 +632,7 @@ class CarScore(object):
 
 
 class Throttling(object):
+
     def __init__(self, limit_per_sec):
         self.limit_per_sec = limit_per_sec
         self.curr_ts = 0
@@ -501,8 +666,10 @@ def main():
                         help='checkpoint file to save latest update timestamp')
     parser.add_argument('--before', type=int, default=10,
                         help='before minutes to update')
-    parser.add_argument('--cars', type=str, help='test car ids, splited by comma')
-    parser.add_argument('--test', action='store_true', help='deploy on test environment')
+    parser.add_argument('--cars', type=str,
+                        help='test car ids, splited by comma')
+    parser.add_argument('--test', action='store_true',
+                        help='deploy on test environment')
     parser.add_argument('--verbose', action='store_true', help='verbose log')
     args = parser.parse_args()
 
@@ -528,13 +695,12 @@ def main():
                   cars=cars, is_test=args.test) as cs:
         if args.action == 'prepare':
             cs.sync_cars()
-            cs.update_verified_time()
+            cs.update_cars()
             cs.update_proportion()
             cs.update_can_send()
             cs.update_review()
             cs.update_orders()
             cs.update_accept()
-            cs.update_car_info()
         elif args.action == 'run':
             cs.update_scores()
 
