@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-30 16:10:17>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-30 17:04:10>
 # Copyright 2015 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -115,10 +115,12 @@ class CarScore(object):
         return ' and {} in ({})'.format(field, ','.join(self.cars)) if self.cars else ''
 
     def sync_cars(self):
-        sql = '''insert into car_rank_feats(car_id, city_code)
+        sql = '''insert into car_rank_feats
+            (car_id, city_code, verified_time)
             select
             c.id as car_id,
-            city_code
+            c.city_code,
+            c.verified_time
             from car c
             left join car_rank_feats cr on c.id=cr.car_id
             where cr.car_id is null and c.status='active'
