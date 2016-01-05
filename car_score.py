@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2015-12-30 17:04:10>
-# Copyright 2015 Julian Qian
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-05 18:03:28>
+# Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
 #
@@ -29,7 +29,7 @@ logger = None
 class CarScore(object):
 
     def __init__(self, before_mins=0, throttling_num=0,
-                 checkpoint_file='./car_score.cp',
+                 checkpoint_file=None,
                  cars=[], is_test=False):
         self.is_test = is_test
         self.db = self._get_db('master')
@@ -454,14 +454,14 @@ class CarScore(object):
         if days > 30:
             if row['pic_num'] < 2:
                 punish += 10
-            if row['desc_len'] < 100:
+            if row['desc_len'] < 50:
                 punish += 10
         if row['recent_cancelled_owner']:
             punish += 20
-        recent_paid = row['recent_paid']
-        recent_cancelled_renter = row['recent_cancelled_renter']
-        if recent_paid > 0 and recent_cancelled_renter / recent_paid > 0.3:
-            punish += 20
+        # recent_paid = row['recent_paid']
+        # recent_cancelled_renter = row['recent_cancelled_renter']
+        # if recent_paid > 0 and recent_cancelled_renter / recent_paid > 0.3:
+        #     punish += 20
         scores['w_punish'] = -punish
         # calc car score
         car_score = reduce(lambda x, y: x + y, scores.itervalues())
@@ -528,9 +528,9 @@ class CarScore(object):
             month_confirm_score = (mcnum / mpnum) * 0.9 + (mpnum / 15) * 0.1
 
         reco_punish_weight = 1
+        past_reject_punish = 0
         if recommend_level > 0:
             reco_punish_weight = 0.6
-            past_reject_punish = 0
         if ppnum == 0:
             past_reject_punish = 8
         elif ppnum == 1 and pcnum == 0:
@@ -609,12 +609,16 @@ class CarScore(object):
         '''.format(self.update_time)
         sql += self._and_cars('car_id')
         rows = self.db.exec_sql(sql)
-        scores_list = []
         for row in rows:
             scores = self._calc_score_old(row)
             logger.debug('[rank] score: %s', scores)
-            scores_list.append(scores)
-        written = self._write_scores(scores_list, 'car_rank')
+            sql = '''update car_rank
+            set update_time=update_time, final_score={}
+            where car_id={}
+            '''.format(scores['final_score'], scores['car_id'])
+            self.throttling.check()
+            self.db.exec_sql(sql)
+        self.db.commit()
         logger.info('[rank] updated %d car rank score old', written)
 
     def update_scores(self):
@@ -664,10 +668,9 @@ def main():
     parser.add_argument('--throttling', type=int, default=200,
                         help='throttling update num per second')
     parser.add_argument('--checkpoint', type=str,
-                        default='./car_score.checkpoint',
                         help='checkpoint file to save latest update timestamp')
-    parser.add_argument('--before', type=int, default=10,
-                        help='before minutes to update')
+    parser.add_argument('--before', type=int,
+                        help='before minutes to update, OVERRIDE checkpoint')
     parser.add_argument('--cars', type=str,
                         help='test car ids, splited by comma')
     parser.add_argument('--test', action='store_true',
