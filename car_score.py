@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-05 18:03:28>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-06 11:45:24>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -267,6 +267,21 @@ class CarScore(object):
         '''.format(self.update_time)
         updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
         logger.info('[review] update %d review cnt', updated_cnt)
+        self.db.commit()
+
+    # `collect_cnt` int(11) DEFAULT '0' COMMENT '收藏数',
+    def update_collect(self):
+        sql = '''update car_rank_feats cf
+           join (
+               select cc.car_id, count(id) cnt
+               from car_collect cc
+               where cc.status=1
+               group by cc.car_id
+           ) r on r.car_id=cf.car_id
+           set cf.collect_cnt=r.cnt
+        '''
+        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        logger.info('[collect] update %d collect cnt', updated_cnt)
         self.db.commit()
 
     # `auto_accept` tinyint(1) DEFAULT NULL COMMENT '是否开启自动接单',
@@ -704,6 +719,7 @@ def main():
             cs.update_proportion()
             cs.update_can_send()
             cs.update_review()
+            cs.update_collect()
             cs.update_orders()
             cs.update_accept()
         elif args.action == 'run':
