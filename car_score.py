@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-06 11:45:24>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-27 17:59:58>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -332,6 +332,7 @@ class CarScore(object):
         sql += self._and_cars('carid')
         rows = db.exec_sql(sql)
         updated_cnt = 0
+        today = datetime.datetime.now()
         for row in rows:
             car_id = row['car_id']
             sql = '''select id order_id, status, status_ext, uid, rtime,
@@ -342,12 +343,17 @@ class CarScore(object):
             '''.format(car_id)
             irows = db.exec_sql(sql)
             rejected_cnt = accepted_cnt = 0
+            rejected_today_cnt = 0
             users = set()
             for irow in irows:
                 if irow['status'] == 'rejected' and \
                    irow['uid'] not in users:
                     rejected_cnt += 1
                     users.add(irow['uid'])
+                    if irow['rtime']:
+                        dd = today - irow['rtime']
+                        if dd.days == 0:
+                            rejected_today_cnt += 1
                 elif irow['status'] != 'rejected' and \
                         irow['rtime'] and irow['status_ext'] != 5:
                     accepted_cnt += 1
@@ -356,6 +362,7 @@ class CarScore(object):
                         accepted_cnt += days
                         logger.debug('[accept] car %d long order %d (%d) add extra %d days',
                                      car_id, irow['order_id'], irow['days'], days)
+            rejected_cnt = max(rejected_cnt, (rejected_today_cnt - 1) * 100)
             accepted_cnt = min(accepted_cnt, 10)
             updated_cnt += self._update(car_id,
                                         {'recent_rejected': rejected_cnt,

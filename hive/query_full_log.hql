@@ -1,5 +1,11 @@
 -- -*- mode: sql -*-
 
+-- CTR base features
+-- 1. scene
+-- 2. car
+-- 3. user
+-- 4. distance
+
 INSERT OVERWRITE DIRECTORY "query_full_log/ds=${hiveconf:datestr}"
 
 SELECT
@@ -11,6 +17,8 @@ lt.distance,
 lt.page,
 lt.pos,
 lt.id,
+
+FROM_UNIXTIME(UNIX_TIMESTAMP(lt.ds,'yyyyMMdd'), 'u') AS day_of_week,
 
 p.price,
 p.suggest_price,
@@ -43,7 +51,8 @@ CASE c.city_code
     WHEN '610100' THEN 2
     ELSE 0 END car_city,
 IF(c.confirmed_rate='-',0,confirmed_rate) confirmed_rate,
-IFNULL(c.confirmed_rate_app,-1) confirmed_rate_app,
+IF(c.confirmed_rate_app IS NULL OR c.confirmed_rate_app<0,
+    0,c.confirmed_rate_app) confirmed_rate_app,
 CASE c.engine_cap
     WHEN 'Below 1,600cc' THEN 1
     WHEN '1,600cc to 2,000cc' THEN 2
@@ -112,4 +121,4 @@ query_log lt
 JOIN daily_price p ON p.ds=${hiveconf:datestr} AND p.car_id=lt.car_id
 JOIN dm_car c ON c.ds=${hiveconf:datestr} AND c.car_id=lt.car_id
 JOIN dm_user u ON u.ds=${hiveconf:datestr} AND u.user_id=lt.user_id
-WHERE lt.ds=${hiveconf:datestr};
+WHERE lt.ds=${hiveconf:datestr} AND lt.page<10;
