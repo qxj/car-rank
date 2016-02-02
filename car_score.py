@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-01-27 17:59:58>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-02-02 11:42:45>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -362,7 +362,8 @@ class CarScore(object):
                         accepted_cnt += days
                         logger.debug('[accept] car %d long order %d (%d) add extra %d days',
                                      car_id, irow['order_id'], irow['days'], days)
-            rejected_cnt = max(rejected_cnt, (rejected_today_cnt - 1) * 100)
+            # rejected_cnt = max(rejected_cnt, (rejected_today_cnt - 1) * 100)
+            rejected_cnt = rejected_cnt
             accepted_cnt = min(accepted_cnt, 10)
             updated_cnt += self._update(car_id,
                                         {'recent_rejected': rejected_cnt,
