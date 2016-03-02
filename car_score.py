@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-02-02 11:42:45>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-03-02 14:50:09>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -171,6 +171,17 @@ class CarScore(object):
         self.db.commit()
         logger.info('[car_info] update %d car_info, affected %d rows',
                     len(rows), updated_cnt)
+
+    def update_price_tuning(self):
+        sql = '''update car_rank_feats cf
+        join price_tools_rank pt on cf.car_id=pt.car_id
+        set cf.price_tuning=pt.score
+        where pt.update_time > '{}'
+        '''.format(self.update_time)
+        sql += self._and_cars('pt.car_id')
+        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        self.db.commit()
+        logger.info('[price_tools] update %d price tunning', updated_cnt)
 
     # `proportion` float DEFAULT NULL COMMENT 'car_owner_price.proportion',
     def update_proportion(self):
@@ -442,6 +453,9 @@ class CarScore(object):
             else:
                 scores['w_price'] = hiw[1]
             scores['w_price'] += -5
+        # price tuning
+        tuning = 0.1 * row['price_tuning']
+        scores['w_price'] += tuning
         # accept
         if row['auto_accept']:
             scores['w_accept'] = 15
@@ -725,6 +739,7 @@ def main():
             cs.sync_cars()
             cs.update_cars()
             cs.update_proportion()
+            cs.update_price_tuning()
             cs.update_can_send()
             cs.update_review()
             cs.update_collect()

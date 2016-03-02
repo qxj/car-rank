@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score_util.py  Time-stamp: <Julian Qian 2016-02-02 11:45:30>
+# @(#) car_score_util.py  Time-stamp: <Julian Qian 2016-02-02 14:13:14>
 # Copyright 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score_util.py,v 0.1 2016-02-02 11:11:27 jqian Exp $
@@ -28,9 +28,9 @@ class CarScoreUtil(object):
         return None
 
     def set_score(self, car_id, manual_weight):
-        self.db.update('car_rank_score',
+        self.db.update('car_rank_feats',
                        {'car_id': car_id},
-                       {'w_manual': manual_weight})
+                       {'manual_weight': manual_weight})
 
     def close(self):
         self.db.commit()

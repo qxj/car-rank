@@ -4,6 +4,7 @@ CREATE TABLE `car_rank_feats` (
   `city_code` varchar(6) DEFAULT NULL,
   `suggest_price` float DEFAULT '0' COMMENT '基准价',
   `proportion` float DEFAULT '0' COMMENT 'car_owner_price.proportion',
+  `price_tuning` float DEFAULT '0' COMMENT 'price_tools_rank.score',
   `owner_send` tinyint(1) DEFAULT '0' COMMENT 'car_rank.owner_can_send',
   `owner_send_desc_len` int(11) unsigned DEFAULT '0' COMMENT '车主送车上门描述字符数',
   `owner_send_distance` int(11) unsigned DEFAULT '0' COMMENT '车主送车上门距离',
