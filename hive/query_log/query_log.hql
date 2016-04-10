@@ -22,7 +22,8 @@ t_exp.car_id,
 t_order.order_id,
 t_dis.distance,
 t_exp.pos,
-t_exp.page
+t_exp.page,
+t_exp.visit_time
 FROM
 (
 SELECT
@@ -31,6 +32,7 @@ user_id,
 city_code,
 params['page'] page,
 pos,
+visit_time,
 CONCAT(user_id, '_', params['query_id']) query_id,
 CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id,
 CONCAT(user_id, '_', params['query_id'], '_', expo_car_id) qcid,
