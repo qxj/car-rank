@@ -24,7 +24,13 @@ def main():
         idx = (page -1) * 15 + pos
         # only clicked items are required
         if label != "impress":
-            print "%s:%.10d\t%s\t%s\t%s" % (qid, idx, city_code, algo, visit_time)
+            # gain = 2^label -1
+            gain = 3
+            if label == "order":
+                gain = 15
+            elif label == "precheck":
+                gain = 7
+            print "%s:%.10d\t%d\t%s\t%s\t%s" % (qid, idx, gain, city_code, algo, visit_time)
 
 if __name__ == "__main__":
     main()

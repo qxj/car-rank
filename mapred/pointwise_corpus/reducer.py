@@ -20,30 +20,36 @@
 
 import sys
 
+
+def trans_label(label):
+    pii = 0
+    if label == "click":
+        pii = 1
+    elif label == "precheck":
+        pii = 2
+    elif label == "order":
+        pii = 3
+    return pii
+
+
 def deliver_rows(rows):
     has_neg = False
     for cols in rows:
-        # cols: qid, idx, label, city_code, user_id, car_id, distance
+        # cols: qid, idx, label, city_code, user_id, car_id, distance, algo,
+        # visit_time
         qid = cols[0]  # for validation
-        idx = cols[1]
         label = cols[2]
         pii = -1
         if not has_neg and label == "impress":
             has_neg = True
-        if has_neg:
-            if label == "click":
-                pii = 3
-            elif label == "precheck":
-                pii = 2
-            elif label == "click":
-                pii = 1
-            elif label == "impress":
-                pii = 0
+        if has_neg or label == "order" or label == "precheck":
+            pii = trans_label(label)
         if pii != -1:
-            line = "%d\t%d\t" % (pii, idx)
-            print line + "\t".join(cols[2:]) + "\t" + qid
+            cols.insert(1, "%d" % pii)
+            print "\t".join(cols)
         else:
-            sys.stderr.write("reporter:counter:My Counters,Discard-Head-Clicks,1\n")
+            sys.stderr.write(
+                "reporter:counter:My Counters,Discard-Head-Clicks,1\n")
 
 
 def main():
@@ -66,7 +72,7 @@ def main():
         row = [qid, idx] + cols[1:]
         rows.append(row)
         if label != "impress":
-            clicked_len = len(rows) 
+            clicked_len = len(rows)
     # trailing rows
     if clicked_len > 0:
         deliver_rows(rows[:clicked_len])

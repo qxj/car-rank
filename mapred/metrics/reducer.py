@@ -15,17 +15,19 @@ def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
-    for i, idx in enumerate(rows):
+    for i, (idx, gain) in enumerate(rows):
         # P@k
         patk = (i +1) / (idx +1)
         patks += patk
-        # dcg(i)
-        d1 += 1.0/cmath.log(idx+2, 2).real
-        d2 += 1.0/cmath.log(i+2, 2).real
+        # dcg(i) = gain_i / discount_i
+        d1 += gain/cmath.log(idx+2, 2).real
+    for i, (_, gain) in enumerate(sorted(rows,key=lambda x:x[1],reverse=True)):
+        # idcg(i)
+        d2 += gain/cmath.log(i+2, 2).real
     # AP = {\sum_k P@k \over relative docs }
     ap = patks / len(rows)
     ap_str = "%.5f" % ap
-    # dcg = \sum_{i=1}^N{2^{label(i)}-1 \over \log_2{(i+1)}}
+    # dcg = \sum_{i=1}^N dcg(i)
     ndcg = d1/d2
     ndcg_str = "%.5f" % ndcg
     # OUTPUT: qid, ap, ndcg, city_code, algo, visit_time
@@ -40,15 +42,17 @@ def main():
     rows = []
     for line in sys.stdin:
         cols = line.strip('\n').split()
-        qid, idx = cols[0].split(':')
-        cols[0] = qid
+        qid, idx_str = cols[0].split(':')
+        idx = float(idx_str)
+        gain = float(cols[1])
+        query = [qid] + cols[2:]  # qid, city_code, algo, visit_time
         if not last_query:
-            last_query = cols
+            last_query = query
         if qid != last_query[0]:
             process(rows, last_query)
             rows = []
-            last_query = cols
-        rows.append(float(idx))
+            last_query = query
+        rows.append((idx, gain))
     process(rows, last_query)
 
 if __name__ == "__main__":
