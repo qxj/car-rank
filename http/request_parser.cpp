@@ -2,14 +2,17 @@
 // request_parser.cpp
 // ~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2013 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "request_parser.hpp"
+#include <cctype>
+#include <glog/logging.h>
+
 #include "request.hpp"
+#include "request_parser.hpp"
 
 namespace http {
 namespace server {
@@ -201,7 +204,7 @@ request_parser::result_type request_parser::consume(request& req, char input)
     else
     {
       req.headers.push_back(header());
-      req.headers.back().name.push_back(input);
+      req.headers.back().name.push_back(std::tolower(input));
       state_ = header_name;
       return indeterminate;
     }
@@ -237,7 +240,7 @@ request_parser::result_type request_parser::consume(request& req, char input)
     }
     else
     {
-      req.headers.back().name.push_back(input);
+      req.headers.back().name.push_back(std::tolower(input));
       return indeterminate;
     }
   case space_before_header_value:
@@ -276,7 +279,27 @@ request_parser::result_type request_parser::consume(request& req, char input)
       return bad;
     }
   case expecting_newline_3:
-    return (input == '\n') ? good : bad;
+    if (input == '\n') {
+      if (req.method == "POST") {
+        state_ = body;
+        return indeterminate;
+      } else {
+        return good;
+      }
+    } else {
+      return bad;
+    }
+    case body:
+      {
+        req.body.push_back(input);
+        VLOG(100) << "parse body " << (char) input << ", size: " << req.body.size() << "/" << req.content_length();
+        state_ = body;
+        if (req.content_length() == req.body.size()) {
+          return good;
+        } else {
+          return indeterminate;
+        }
+      }
   default:
     return bad;
   }

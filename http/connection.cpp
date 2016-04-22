@@ -2,17 +2,20 @@
 // connection.cpp
 // ~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2013 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "connection.hpp"
 #include <utility>
 #include <vector>
+#include <glog/logging.h>
+
 #include "connection_manager.hpp"
 #include "request_handler.hpp"
+
+#include "connection.hpp"
 
 namespace http {
 namespace server {
@@ -47,6 +50,8 @@ void connection::do_read()
           std::tie(result, std::ignore) = request_parser_.parse(
               request_, buffer_.data(), buffer_.data() + bytes_transferred);
 
+          VLOG(100) << "async read " << bytes_transferred << " bytes from " << socket_.remote_endpoint();
+
           if (result == request_parser::good)
           {
             request_handler_.handle_request(request_, reply_);
@@ -54,6 +59,7 @@ void connection::do_read()
           }
           else if (result == request_parser::bad)
           {
+            LOG(ERROR) << "failed to parse request, from " << socket_.remote_endpoint();
             reply_ = reply::stock_reply(reply::bad_request);
             do_write();
           }

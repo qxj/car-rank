@@ -2,7 +2,7 @@
 // request_parser.hpp
 // ~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2013 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -86,7 +86,8 @@ private:
     space_before_header_value,
     header_value,
     expecting_newline_2,
-    expecting_newline_3
+    expecting_newline_3,
+    body
   } state_;
 };
 
