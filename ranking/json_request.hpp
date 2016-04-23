@@ -15,32 +15,32 @@
 
 namespace ranking {
 
-struct car
+struct CarInfo
 {
   int car_id;
   float distance;
   float price;
 
-  car(int car_id, float distance=0, float price=0)
+  CarInfo(int car_id, float distance=0, float price=0)
       : car_id(car_id) , distance(distance), price(price) {}
 };
 
-struct json_request
+struct JsonRequest
 {
   std::string algo;
   int user_id;
-  std::vector<car> car_list;
+  std::vector<CarInfo> car_list;
 
-  json_request() : algo("default") {}
+  JsonRequest() : algo("default") {}
 };
 
-struct json_reply
+struct JsonReply
 {
   int ret;
   std::string err_msg;
   std::vector<int> car_id_list;
 
-  json_reply() : ret(0) {}
+  JsonReply() : ret(0) {}
 };
 
 }

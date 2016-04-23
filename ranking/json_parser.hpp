@@ -22,8 +22,8 @@ namespace ranking
 class JsonParser
 {
  public:
-  int parse_request(const std::string&, json_request&);
-  int reply_string(const json_reply&, std::string&);
+  int parse_request(const std::string&, JsonRequest&);
+  int reply_string(const JsonReply&, std::string&);
  private:
   rapidjson::Document doc_;
 };

@@ -2,10 +2,11 @@ add_executable(ranksvr main.cpp )
 
 include_directories(${PROJECT_SOURCE_DIR}/http)
 
+include_directories(${GLOG_INCLUDE_DIRS} ${GFlags_INCLUDE_DIRS})
+
 target_link_libraries(ranksvr
   http
-  glog
-  gflags
-  boost_system
-  boost_thread
-  pthread)
+  ${Boost_LIBRARIES}
+  ${GFlags_LIBS}
+  ${GLOG_LIBRARIES}
+  )
