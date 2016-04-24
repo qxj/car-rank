@@ -237,8 +237,11 @@ ${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR}")
   set(GLOG_LIBRARY_PATH ${binary_dir}/.libs )
 
   # WORKAROUND log_severity.h is missing
-  file(COPY ${source_dir}/src/glog/log_severity.h
-    DESTINATION ${GLOG_INCLUDE_DIRS}/glog)
+  ExternalProject_Add_Step(
+    glog-${glog_RELEASE} workaround
+    COMMAND cp ${source_dir}/src/glog/log_severity.h ${GLOG_INCLUDE_DIRS}/glog
+    DEPENDEES build
+    )
 
   # import built library as a new one
   set(GLOG_LIBRARIES glog)
@@ -295,16 +298,20 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
   set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${source_dir})
   set(MYSQLCONNECTORCPP_LIBRARY_PATH ${binary_dir}/driver)
 
-  file(COPY
-    ${source_dir}/driver/mysql_connection.h
-    ${source_dir}/driver/mysql_driver.h
-    ${source_dir}/driver/mysql_public_iface.h
-    DESTINATION ${MYSQLCONNECTORCPP_INCLUDE_DIRS})
+  ExternalProject_Add_Step(
+    MySQLConnectorCpp-${mysqlcppconn_RELEASE} workaround
+    COMMAND
+    cp ${source_dir}/driver/mysql_connection.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
+    && cp ${source_dir}/driver/mysql_driver.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
+    && cp ${source_dir}/driver/mysql_public_iface.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
+    DEPENDEES build
+    )
+
 
   set(MYSQLCONNECTORCPP_LIBRARIES mysqlcppconn)
   add_library(mysqlcppconn UNKNOWN IMPORTED)
   set_target_properties(mysqlcppconn PROPERTIES
-    IMPORTED_LOCATION ${MYSQLCONNECTORCPP_LIBRARY_PATH}/libmysqlcppconn.a)
+    IMPORTED_LOCATION ${MYSQLCONNECTORCPP_LIBRARY_PATH}/libmysqlcppconn-static.a)
   add_dependencies(mysqlcppconn MySQLConnectorCpp)
 
   include_directories(${MYSQLCONNECTORCPP_INCLUDE_DIRS})

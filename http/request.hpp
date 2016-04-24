@@ -28,7 +28,7 @@ struct request
   int http_version_major;
   int http_version_minor;
   std::vector<header> headers;
-  std::string body;
+  std::string content;
 
   size_t content_length() {
     if (!content_length_) {

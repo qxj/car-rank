@@ -5,6 +5,8 @@ add_executable(ranksvr ${SVR_SRCS} )
 include_directories(${PROJECT_SOURCE_DIR}/http
   ${PROJECT_SOURCE_DIR}/ranking)
 
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
+
 include_directories(${GLOG_INCLUDE_DIRS} ${GFLAGS_INCLUDE_DIRS})
 
 target_link_libraries(ranksvr
@@ -14,4 +16,5 @@ target_link_libraries(ranksvr
   ${GLOG_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${MYSQLCONNECTORCPP_LIBRARIES}
+  mysqlclient_r
   )

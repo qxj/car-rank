@@ -10,6 +10,8 @@
 
 #include <iostream>
 #include <string>
+#include <functional>
+
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
@@ -21,6 +23,8 @@ DEFINE_int32(port, 20164, "rank server port");
 
 int main(int argc, char* argv[])
 {
+  using namespace std::placeholders;
+
   google::ParseCommandLineFlags(&argc, &argv, true);
   // google::ReadFromFlagsFile("ranksvr.gflags", program_invocation_name, true);
 

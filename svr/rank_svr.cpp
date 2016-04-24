@@ -12,5 +12,10 @@
 void
 RankSvr::legecy_handler(const http::server::request& req, http::server::reply& rep)
 {
-  legecy_.ranking(req, rep);
+  ranking::JsonRequest jreq;
+  ranking::JsonReply jrep;
+  parser_.parse_request(req.content, jreq);
+  legecy_.ranking(jreq, jrep);
+  parser_.reply_string(jrep, rep.content);
+  rep.add_content_type("plain/json");
 }

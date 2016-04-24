@@ -23,7 +23,7 @@ class dummy_server : public server
   {}
   void dummy_handler(const request& req, reply& rep)
   {
-    rep.add_content("hi, " + dummy);
+    rep.add_content(dummy);
   }
  private:
   std::string dummy = "dummy server";
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     dummy_server s("0.0.0.0", port);
 
     // s.add_handler("/",
-    //               [&](const request& req, reply& rep)
+    //               [&](request& req, reply& rep)
     //               {
     //                 rep.add_content("hello, dummy server");
     //               });

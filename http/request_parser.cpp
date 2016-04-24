@@ -281,7 +281,7 @@ request_parser::result_type request_parser::consume(request& req, char input)
   case expecting_newline_3:
     if (input == '\n') {
       if (req.method == "POST") {
-        state_ = body;
+        state_ = content;
         return indeterminate;
       } else {
         return good;
@@ -289,12 +289,12 @@ request_parser::result_type request_parser::consume(request& req, char input)
     } else {
       return bad;
     }
-    case body:
+    case content:
       {
-        req.body.push_back(input);
-        VLOG(100) << "parse body " << (char) input << ", size: " << req.body.size() << "/" << req.content_length();
-        state_ = body;
-        if (req.content_length() == req.body.size()) {
+        req.content.push_back(input);
+        VLOG(100) << "parse content " << (char) input << ", size: " << req.content.size() << "/" << req.content_length();
+        state_ = content;
+        if (req.content_length() == req.content.size()) {
           return good;
         } else {
           return indeterminate;

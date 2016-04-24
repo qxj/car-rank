@@ -12,13 +12,17 @@
 
 #include "server.hpp"
 #include "legecy.hpp"
+#include "json_parser.hpp"
 
 class RankSvr : public http::server::server
 {
  public:
+  RankSvr(const std::string& address, short port)
+      : http::server::server(address, port) {}
   void legecy_handler(const http::server::request& req, http::server::reply& rep);
  private:
-  Legecy legecy_;
-}
+  ranking::Legecy legecy_;
+  ranking::JsonParser parser_;
+};
 
 #endif // RANK_SVR_HPP_

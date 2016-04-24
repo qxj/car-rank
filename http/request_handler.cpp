@@ -42,7 +42,7 @@ void request_handler::handle_request(const request& req, reply& rep)
     return;
   }
 
-  // VLOG(100) << "request body " << req.body;
+  // VLOG(100) << "request content " << req.content;
 
   RouteType::const_iterator itr = route_.find(request_path);
   if (itr != route_.end()) {

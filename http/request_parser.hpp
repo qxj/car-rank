@@ -87,7 +87,7 @@ private:
     header_value,
     expecting_newline_2,
     expecting_newline_3,
-    body
+    content
   } state_;
 };
 

@@ -9,10 +9,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 
 #include <mysql_public_iface.h>
 
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include "legecy_db.hpp"
 
@@ -31,24 +33,24 @@ LegecyDb::LegecyDb()
 
 LegecyDb::~LegecyDb()
 {
-  delete driver_;
+  // delete driver_;
 }
 
 void
 LegecyDb::query_scores(JsonRequest::CarsType& cars)
 {
   try {
-    std::scoped_ptr<sql::Connection> conn(driver_->connect(
+    std::unique_ptr<sql::Connection> conn(driver_->connect(
         FLAGS_my_host, FLAGS_my_user, FLAGS_my_passwd));
 
     conn->setSchema(FLAGS_my_dbname);
 
-    std::scoped_ptr<sql::Statement> stmt(conn->createStatement());
+    std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 
     std::string sql{"select car_id, score from car_rank_legecy where car_id in ("};
 
     std::for_each(cars.begin(), cars.end(),
-                  [&sql](auto& c)
+                  [&sql](CarInfo& c)
                   {
                     sql.append(std::to_string(c.car_id));
                     sql.push_back(',');
@@ -58,7 +60,7 @@ LegecyDb::query_scores(JsonRequest::CarsType& cars)
     VLOG(100) << "query sql: " << sql;
 
     {
-      std::scoped_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
+      std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
       std::unordered_map<int, float> car_scores;
       while (res->next()) {
         int car_id = res->getInt("car_id");
