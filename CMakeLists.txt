@@ -121,18 +121,16 @@ if(NOT GTest_FOUND)
 
   # Library
   ExternalProject_Get_Property(googletest binary_dir)
-  set(GTEST_LIBRARY_PATH ${binary_dir}/${CMAKE_FIND_LIBRARY_PREFIXES}gtest.a)
   set(GTEST_LIBRARY gtest)
   add_library(${GTEST_LIBRARY} UNKNOWN IMPORTED)
-  set_property(TARGET ${GTEST_LIBRARY} PROPERTY IMPORTED_LOCATION
-    ${GTEST_LIBRARY_PATH} )
+  set_target_properties(${GTEST_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${binary_dir}/libgtest.a)
   add_dependencies(${GTEST_LIBRARY} googletest)
   # Libray gtest_main
-  set(GTEST_MAIN_LIBRARY_PATH ${binary_dir}/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main.a)
   set(GTEST_MAIN_LIBRARY gtest_main)
   add_library(${GTEST_MAIN_LIBRARY} UNKNOWN IMPORTED)
-  set_property(TARGET ${GTEST_MAIN_LIBRARY} PROPERTY IMPORTED_LOCATION
-    ${GTEST_MAIN_LIBRARY_PATH} )
+  set_target_properties(${GTEST_MAIN_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${binary_dir}/libgtest_main.a)
   add_dependencies(${GTEST_MAIN_LIBRARY} googletest)
 
 endif(NOT GTest_FOUND)
@@ -141,18 +139,6 @@ endif(NOT GTest_FOUND)
 # enable_testing()
 # find_package(GTest REQUIRED)
 # include_directories(${GTEST_INCLUDE_DIRS})
-
-
-# find_path(GFLAGS_INC gflags/gflags.h)
-# find_library(GFLAGS_LIB gflags)
-# if(GFLAGS_INC AND GFLAGS_LIB)
-#   message(STATUS "Found google gflags header in ${GFLAGS_INC}")
-#   include_directories(${GFLAGS_INC})
-#   message(STATUS "Found google gflags library ${GFLAGS_LIB}")
-#   # link_directories(${GFLAGS_LIB})
-# else()
-#   message(FATAL_ERROR "Package google gflags is required, but not found")
-# endif()
 
 
 ################################################################################
@@ -317,19 +303,47 @@ endif(NOT ENABLE_LOG)
 # add_subdirectory(thirdparty/gtest-1.6.0)
 # include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-################################################################
-find_path(MYCON_INC cppconn/config.h)
-find_library(MYCON_LIB mysqlcppconn)
-# find_library(MYCON_LIB libmysqlcppconn.a)
-if(MYCON_INC AND MYCON_LIB)
-  message(STATUS "Found mysql cpp connector header in ${MYCON_INC}")
-  include_directories(${MYCON_INC})
-  message(STATUS "Found mysql cpp connector library ${MYCON_LIB}")
-  # link_directories(${MYCON_LIB})
-else()
-  message(FATAL_ERROR "Package mysql cpp connector is required, but not found")
-endif()
 
+################################################################################
+# mysqlcppconn - https://dev.mysql.com/downloads/connector/cpp/1.0.html
+################################################################################
+set(mysqlcppconn_RELEASE 1.1.7)
+find_package(MySQLConnectorCpp)
+if(NOT MYSQLCONNECTORCPP_FOUND)
+  message (STATUS " MYSQL-CONNECTOR-CPP has not been found.")
+  message (STATUS " MYSQL-CONNECTOR-CPP will be downloaded and built automatically ")
+  message (STATUS " when doing 'make'. ")
+
+  ExternalProject_Add(
+    MySQLConnectorCpp
+    URL http://cdn.mysql.com//Downloads/Connector-C++/mysql-connector-c++-${mysqlcppconn_RELEASE}.tar.gz
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mysqlcppconn/mysqlcppconn-${mysqlcppconn_RELEASE}
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mysqlcppconn-${mysqlcppconn_RELEASE}
+    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    BUILD_COMMAND make
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    INSTALL_COMMAND ""
+    # Wrap download, configure and build steps in a script to log output
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON)
+
+  # Specify include dir
+  ExternalProject_Get_Property(MySQLConnectorCpp source_dir)
+  set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${source_dir}/include)
+
+  # Library
+  ExternalProject_Get_Property(MySQLConnectorCpp binary_dir)
+  set(MYSQLCONNECTORCPP_LIBRARY mysqlcppconn)
+  add_library(${MYSQLCONNECTORCPP_LIBRARY} UNKNOWN IMPORTED)
+  set_target_properties(${MYSQLCONNECTORCPP_LIBRARY} PROPERTIES
+    IMPORTED_LOCATION ${binary_dir}/libmysqlcppconn.a)
+  add_dependencies(${MYSQLCONNECTORCPP_LIBRARY} MySQLConnectorCpp)
+
+  set(MYSQLCONNECTORCPP_LIBRARIES ${MYSQLCONNECTORCPP_LIBRARY})
+
+endif(NOT MYSQLCONNECTORCPP_FOUND)
 
 
 add_subdirectory(svr)

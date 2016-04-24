@@ -12,5 +12,5 @@
 void
 RankSvr::legecy_handler(const http::server::request& req, http::server::reply& rep)
 {
-
+  legecy_.ranking(req, rep);
 }

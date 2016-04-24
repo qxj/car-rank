@@ -14,7 +14,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "server.hpp"
+#include "rank_svr.hpp"
 
 DEFINE_string(host, "0.0.0.0", "rank server host");
 DEFINE_int32(port, 20164, "rank server port");
@@ -30,15 +30,17 @@ int main(int argc, char* argv[])
   try
   {
     // Initialise the server.
-    http::server::server s(FLAGS_host,
-            static_cast<short>(FLAGS_port));
+    RankSvr s(FLAGS_host, static_cast<short>(FLAGS_port));
+
+    s.add_handler("/legecy", std::bind(
+        &RankSvr::legecy_handler, &s, _1, _2));
 
     // Run the server until stopped.
     s.run();
   }
   catch (std::exception& e)
   {
-    std::cerr << "exception: " << e.what() << "\n";
+    LOG(ERROR) << "exception: " << e.what() ;
   }
 
   return 0;
