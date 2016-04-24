@@ -12,6 +12,7 @@
 #define HTTP_SERVER_HPP
 
 #include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
 #include <string>
 #include "connection.hpp"
 #include "connection_manager.hpp"
@@ -21,15 +22,17 @@ namespace http {
 namespace server {
 
 /// The top-level class of the HTTP server.
-class server
+class server : private boost::noncopyable
 {
 public:
-  server(const server&) = delete;
-  server& operator=(const server&) = delete;
-
   /// Construct the server to listen on the specified TCP address and port, and
   /// serve up files from the given directory.
-  explicit server(const std::string& address, const std::string& port);
+  server(const std::string& address, short port);
+
+  void add_handler(const std::string& path, HandlerFunc handler)
+  {
+    request_handler_.add_handler(path, handler);
+  }
 
   /// Run the server's io_service loop.
   void run();
@@ -58,6 +61,7 @@ private:
 
   /// The handler for all incoming requests.
   request_handler request_handler_;
+
 };
 
 } // namespace server

@@ -4,8 +4,7 @@ project(ranking CXX)
 # Project setup
 ########################################################################
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-  # message(WARNING "In-tree build is bad practice. Try 'cd build && cmake ../' ")
-  message(FATAL_ERROR "In-tree build is bad practice. Try 'cd build && cmake ../' ")
+  message(WARNING "In-tree build is bad practice. Try 'cd build && cmake ../' ")
 endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 cmake_minimum_required(VERSION 2.8)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules)

@@ -10,10 +10,11 @@
 
 #include <fstream>
 #include <sstream>
-#include <string>
 
-#include "reply.hpp"
-#include "request.hpp"
+#include <glog/logging.h>
+
+// #include "reply.hpp"
+// #include "request.hpp"
 
 #include "request_handler.hpp"
 
@@ -41,17 +42,16 @@ void request_handler::handle_request(const request& req, reply& rep)
     return;
   }
 
-  VLOG(100) << "request body " << req.body;
+  // VLOG(100) << "request body " << req.body;
 
-  rep.content = "hello world:";
-  rep.content.append(req.body);
-  rep.content.append("\n");
-  rep.status = reply::ok;
-  rep.headers.resize(2);
-  rep.headers[0].name = "Content-Length";
-  rep.headers[0].value = std::to_string(rep.content.size());
-  rep.headers[1].name = "Content-Type";
-  rep.headers[1].value = "plain/text";
+  RouteType::const_iterator itr = route_.find(request_path);
+  if (itr != route_.end()) {
+    (itr->second)(req, rep);
+    rep.add_content_length();
+  } else {
+    VLOG(100) << "unknown route path " << request_path;
+    rep = reply::stock_reply(reply::not_found);
+  }
 }
 
 bool request_handler::url_decode(const std::string& in, std::string& out)

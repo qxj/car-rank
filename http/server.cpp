@@ -17,11 +17,10 @@
 namespace http {
 namespace server {
 
-server::server(const std::string& address, const std::string& port)
+server::server(const std::string& address, short port)
   : io_service_(),
     signals_(io_service_),
     acceptor_(io_service_),
-    connection_manager_(),
     socket_(io_service_),
     request_handler_()
 {
@@ -37,8 +36,8 @@ server::server(const std::string& address, const std::string& port)
   do_await_stop();
 
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-  boost::asio::ip::tcp::resolver resolver(io_service_);
-  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve({address, port});
+  boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string(address), port);
   acceptor_.open(endpoint.protocol());
   acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
   acceptor_.bind(endpoint);

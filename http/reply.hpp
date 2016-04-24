@@ -2,7 +2,7 @@
 // reply.hpp
 // ~~~~~~~~~
 //
-// Copyright (c) 2003-2013 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
+
 #include "header.hpp"
 
 namespace http {
@@ -22,6 +23,7 @@ namespace server {
 /// A reply to be sent to a client.
 struct reply
 {
+
   /// The status of the reply.
   enum status_type
   {
@@ -48,6 +50,29 @@ struct reply
 
   /// The content to be sent in the reply.
   std::string content;
+
+  reply() : status(reply::ok) {}
+
+  // helper functions
+  void add_content(const std::string& cont)
+  {
+    content = cont;
+  }
+
+  void add_header(const std::string& name, const std::string& value)
+  {
+    headers.emplace_back(name, value);
+  }
+
+  void add_content_length()
+  {
+    add_header("Content-Length", std::to_string(content.size()));
+  }
+
+  void add_content_type(const std::string& type)
+  {
+    add_header("Content-Type", type);
+  }
 
   /// Convert the reply into a vector of buffers. The buffers do not own the
   /// underlying memory blocks, therefore the reply object must remain valid and

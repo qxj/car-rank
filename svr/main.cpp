@@ -17,7 +17,7 @@
 #include "server.hpp"
 
 DEFINE_string(host, "0.0.0.0", "rank server host");
-DEFINE_string(port, "20164", "rank server port");
+DEFINE_int32(port, 20164, "rank server port");
 
 int main(int argc, char* argv[])
 {
@@ -30,7 +30,8 @@ int main(int argc, char* argv[])
   try
   {
     // Initialise the server.
-    http::server::server s(FLAGS_host, FLAGS_port);
+    http::server::server s(FLAGS_host,
+            static_cast<short>(FLAGS_port));
 
     // Run the server until stopped.
     s.run();

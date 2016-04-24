@@ -42,7 +42,7 @@ TEST_F(JsonParserTest, json_to_request)
   EXPECT_TRUE(request.algo == "legecy");
   // std::cerr << "Request algo " << request.algo << "\n";
   EXPECT_EQ(1234, request.user_id);
-  EXPECT_EQ(4, request.car_list.size());
+  EXPECT_EQ(4, request.cars.size());
 }
 
 TEST_F(JsonParserTest, reply_to_json)

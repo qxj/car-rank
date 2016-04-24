@@ -11,10 +11,8 @@
 #ifndef HTTP_REQUEST_HPP
 #define HTTP_REQUEST_HPP
 
-#include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
-
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "header.hpp"
@@ -36,10 +34,9 @@ struct request
     if (!content_length_) {
       for (auto h: headers) {
         if (h.name == "content-length") {
-          VLOG(100) << "content length: " << h.value ;
           try {
-            content_length_ = boost::lexical_cast<int>(h.value);
-          } catch (const boost::bad_lexical_cast& ) {
+            content_length_ = std::stoi(h.value);
+          } catch (const std::invalid_argument& ) {
             content_length_ = -1;
           }
           break;
