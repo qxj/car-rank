@@ -28,7 +28,9 @@ class server : private boost::noncopyable
 public:
   /// Construct the server to listen on the specified TCP address and port, and
   /// serve up files from the given directory.
-  server(const std::string& address, short port, std::size_t io_service_pool_size=2);
+  server(const std::string& address, short port,
+         std::size_t io_service_pool_size=2);
+
   virtual ~server() = default;
 
   void add_handler(const std::string& path, HandlerFunc handler)

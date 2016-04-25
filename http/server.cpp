@@ -21,6 +21,7 @@ server::server(const std::string& address, short port, std::size_t io_service_po
   : io_service_pool_(io_service_pool_size),
     signals_(io_service_pool_.get_io_service()),
     acceptor_(io_service_pool_.get_io_service()),
+    new_connection_(),
     request_handler_()
 {
   // Register to handle the signals that indicate when the server should exit.

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2016 Julian Qian
 //
-// @file      example_dummy_server.cpp
+// @file      dummy_server.cpp
 // @author    Julian Qian <junist@gmail.com>
 // @created   2016-04-24 12:21:12
 //
@@ -23,11 +23,13 @@ class dummy_server : public server
   {}
   void dummy_handler(const request& req, reply& rep)
   {
-    dummy.append(req.content);
-    rep.add_content(dummy);
+    std::string content = "dummy count: ";
+    content.append(std::to_string(++dummy));
+    content.append("\n");
+    rep.add_content(content);
   }
  private:
-  std::string dummy = "dummy server:\n";
+  int dummy = 0;
 };
 
 int main(int argc, char *argv[])

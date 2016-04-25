@@ -45,7 +45,7 @@ void io_service_pool::run()
     // std::shared_ptr<std::thread> thread(new std::thread(
     //     [&]{ios->run();}));
     std::shared_ptr<std::thread> thread(new std::thread(
-        [&]{
+        [this, i]{
           io_services_[i]->run();
         }));
     threads.push_back(thread);
