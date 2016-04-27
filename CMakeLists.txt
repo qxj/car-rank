@@ -1,24 +1,37 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(ranking)
+project(ranking CXX)
 
-set(CMAKE_BUILD_TYPE "Debug")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -std=c++11 -g -ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -std=c++11")
+set(CXX_FLAGS -Wall -std=c++11)
+
+enable_testing()
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3")
+
+if(CMAKE_BUILD_BITS EQUAL 32)
+  list(APPEND CXX_FLAGS "-m32")
+endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-find_path(BOOST_INC NAMES boost/asio.hpp boost/thread.hpp)
-find_library(BOOST_LIB NAMES libboost_system.a libboost_thread.a)
-if(BOOST_INC AND BOOST_LIB)
-  message(STATUS "Found boost header in ${BOOST_INC}")
-  include_directories(${BOOST_INC})
-  message(STATUS "Found boost library ${BOOST_LIB}")
-  # link_directories(${BOOST_LIB})
-else()
-  message(FATAL_ERROR "Package boost is required, but not found")
-endif()
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
+# find_path(BOOST_INC NAMES boost/asio.hpp boost/thread.hpp)
+# find_library(BOOST_LIB NAMES libboost_system.a libboost_thread.a)
+# if(BOOST_INC AND BOOST_LIB)
+#   message(STATUS "Found boost header in ${BOOST_INC}")
+#   include_directories(${BOOST_INC})
+#   message(STATUS "Found boost library ${BOOST_LIB}")
+#   # link_directories(${BOOST_LIB})
+# else()
+#   message(FATAL_ERROR "Package boost is required, but not found")
+# endif()
 
 find_path(MYCON_INC cppconn/config.h)
 find_library(MYCON_LIB libmysqlcppconn.a)
