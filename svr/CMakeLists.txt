@@ -4,8 +4,8 @@ include_directories(${PROJECT_SOURCE_DIR}/http)
 
 target_link_libraries(ranksvr
   http
-  pthread
+  glog
+  gflags
   boost_system
   boost_thread
-  glog
-  gflags)
+  pthread)
