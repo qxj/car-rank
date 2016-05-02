@@ -12,5 +12,5 @@ target_link_libraries(example_dummy_server
   http
   ${Boost_LIBRARIES}
   ${GLOG_LIBRARIES}
-  ${GFlags_LIBS}
+  ${GFLAGS_LIBRARIES}
   )

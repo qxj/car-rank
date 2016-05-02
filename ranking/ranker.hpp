@@ -17,7 +17,7 @@ namespace ranking
 class Ranker
 {
  public:
-  virtual void ranking(const JsonRequest&, JsonReply&) = 0;
+  virtual void ranking(JsonRequest&, JsonReply&) = 0;
 };
 }
 

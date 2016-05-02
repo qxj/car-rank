@@ -5,7 +5,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
 
 include_directories(${GLOG_INCLUDE_DIRS}
-  ${GFlags_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
+  ${GFLAGS_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
 add_definitions(-DRAPIDJSON_HAS_STDSTRING)
 
@@ -20,7 +20,7 @@ add_executable(json_parser_test json_parser_test.cpp)
 target_link_libraries(json_parser_test
   ranking
   ${GLOG_LIBRARIES}
-  ${GFlags_LIBS}
+  ${GFLAGS_LIBRARIES}
   ${GTEST_LIBRARY}
   ${GTEST_MAIN_LIBRARY})
 

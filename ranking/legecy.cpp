@@ -14,9 +14,9 @@
 using namespace ranking;
 
 void
-Legecy::ranking(const ranking::JsonRequest & req, ranking::JsonReply & rep)
+Legecy::ranking(ranking::JsonRequest & req, ranking::JsonReply & rep)
 {
-  const JsonRequest::CarsType& cars = req.cars;
+  JsonRequest::CarsType& cars = req.cars;
   std::sort(cars.begin(), cars.end(),
             [](const CarInfo& a, const CarInfo& b) {
               return a.score > b.score;

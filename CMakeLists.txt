@@ -101,7 +101,6 @@ if(NOT GTest_FOUND)
     googletest
     URL http://googletest.googlecode.com/files/gtest-${gtest_RELEASE}.zip
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest-${gtest_RELEASE}
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gtest/gtest-${gtest_RELEASE}
     # TIMEOUT 10
     # # Force separate output paths for debug and release builds to allow easy
     # # identification of correct lib in subsequent TARGET_LINK_LIBRARIES commands
@@ -117,10 +116,11 @@ if(NOT GTest_FOUND)
 
   # Specify include dir
   ExternalProject_Get_Property(googletest source_dir)
+  ExternalProject_Get_Property(googletest binary_dir)
+
   set(GTEST_INCLUDE_DIRS ${source_dir}/include)
 
   # Library
-  ExternalProject_Get_Property(googletest binary_dir)
   set(GTEST_LIBRARY gtest)
   add_library(${GTEST_LIBRARY} UNKNOWN IMPORTED)
   set_target_properties(${GTEST_LIBRARY} PROPERTIES
@@ -144,10 +144,9 @@ endif(NOT GTest_FOUND)
 ################################################################################
 # gflags - https://github.com/gflags/gflags
 ################################################################################
-set(LOCAL_GFLAGS false)
 set(gflags_RELEASE 2.1.2)
 find_package(GFlags)
-if (NOT GFlags_FOUND)
+if (NOT GFLAGS_FOUND)
   message (STATUS " gflags library has not been found.")
   message (STATUS " gflags will be downloaded and built automatically ")
   message (STATUS " when doing 'make'. ")
@@ -157,8 +156,6 @@ if (NOT GFlags_FOUND)
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}
     GIT_REPOSITORY https://github.com/gflags/gflags.git
     GIT_TAG v${gflags_RELEASE}
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gflags/gflags-${gflags_RELEASE}
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}
     CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DBUILD_gflags_nothreads_LIB=OFF -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     BUILD_COMMAND make
     UPDATE_COMMAND ""
@@ -166,112 +163,65 @@ if (NOT GFlags_FOUND)
     INSTALL_COMMAND ""
     )
 
-  set(GFlags_INCLUDE_DIRS
-    ${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/include CACHE PATH "Local Gflags headers"
-    )
+  ExternalProject_Get_Property(gflags-${gflags_RELEASE} binary_dir)
+  ExternalProject_Get_Property(gflags-${gflags_RELEASE} source_dir)
 
+  set(GFLAGS_INCLUDE_DIRS ${binary_dir}/include CACHE PATH "Local Gflags headers")
+  set(GFLAGS_LIBRARY_PATH ${binary_dir}/lib )
+
+  set(GFLAGS_BUILD_DIR ${binary_dir}) # to compile glog
+
+  # import built library as a new one
+  set(GFLAGS_LIBRARIES gflags)
   add_library(gflags UNKNOWN IMPORTED)
-  set_property(TARGET gflags PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gflags.a)
+  set_target_properties(gflags PROPERTIES IMPORTED_LOCATION ${GFLAGS_LIBRARY_PATH}/libgflags.a)
   add_dependencies(gflags gflags-${gflags_RELEASE})
-  set(GFlags_LIBS gflags)
-  file(GLOB GFlags_SHARED_LIBS "${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib/${CMAKE_FIND_LIBRARY_PREFIXES}gflags${CMAKE_SHARED_LIBRARY_SUFFIX}*")
-  set(GFlags_LIBRARY gflags-${gflags_RELEASE})
-  set(GFlags_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib )
-  link_directories(${GFlags_LIBRARY_PATH})
-  set(GFlags_lib ${GFlags_LIBS} CACHE FILEPATH "Local Gflags library")
-  set(GFlags_LIBRARY_PATH ${GFlags_LIBS})
-  set(LOCAL_GFLAGS true CACHE STRING "GFlags downloaded and built automatically" FORCE)
-endif(NOT GFlags_FOUND)
+
+  # file(GLOB GFLAGS_SHARED_LIBRARIES "${binary_dir}/libgflags${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+  include_directories(${GFLAGS_INCLUDE_DIRS})
+  link_directories(${GFLAGS_LIBRARY_PATH})
+endif(NOT GFLAGS_FOUND)
 
 ################################################################################
 # glog - https://github.com/google/glog
 ################################################################################
-find_package(GLOG)
-if(GLOG_INCLUDE_DIRS)
-  set(GLOG_FOUND ON)
-endif(GLOG_INCLUDE_DIRS)
 set(glog_RELEASE 0.3.4)
-if (NOT GLOG_FOUND OR ${LOCAL_GFLAGS})
+find_package(GLOG)
+if (NOT GLOG_FOUND)
   message (STATUS " glog library has not been found")
-  if(NOT GFlags_FOUND)
+  if(NOT GFLAGS_FOUND)
     message(STATUS " or it is likely not linked to gflags.")
-  endif(NOT GFlags_FOUND)
-  message (STATUS " glog will be downloaded and built automatically ")
-  message (STATUS " when doing 'make'. ")
-  if(NOT ${LOCAL_GFLAGS})
-    add_library(gflags-${gflags_RELEASE} UNKNOWN IMPORTED)
-    set_property(TARGET gflags-${gflags_RELEASE} PROPERTY IMPORTED_LOCATION "${GFlags_LIBS}")
-  endif(NOT ${LOCAL_GFLAGS})
+  endif(NOT GFLAGS_FOUND)
+  message (STATUS " it will be downloaded and built automatically when doing 'make'.")
 
-  if(${LOCAL_GFLAGS})
-    set(TARGET_GFLAGS ${gflags})
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        "#!/bin/sh
-export CPPFLAGS=-I${GFlags_INCLUDE_DIRS}
-export LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib
-export LIBS=${GFlags_SHARED_LIBS}
-export CXXFLAGS=\"-stdlib=libc++\"
-export CC=clang
-export CXX=clang++
-${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/configure")
-      file(COPY ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
-        FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-        GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    else("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        "#!/bin/sh
-export CPPFLAGS=-I${GFlags_INCLUDE_DIRS}
-export LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib
-export LIBS=${GFlags_SHARED_LIBS}
-${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/configure")
-      file(COPY ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
-        FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-        GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(GLOG_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE})
 
-  else(${LOCAL_GFLAGS})
-    set(TARGET_GFLAGS gflags-${gflags_RELEASE})
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        "#!/bin/sh
-export CPPFLAGS=-I${GFlags_INCLUDE_DIRS}
-export LDFLAGS=-L${GFlags_LIBRARY_DIRS}
-export LIBS=\"${GFlags_LIBS} -lc++\"
-export CXXFLAGS=\"-stdlib=libc++\"
-export CC=clang
-export CXX=clang++
-${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/configure")
-      file(COPY ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
-        FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-        GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    else("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        "#!/bin/sh
-export CPPFLAGS=-I${GFlags_INCLUDE_DIRS}
-export LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/gflags-${gflags_RELEASE}/lib
-export LIBS=${GFlags_SHARED_LIBS}
-${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/configure")
-      file(COPY ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/tmp/configure_with_gflags
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
-        FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-        GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  endif(${LOCAL_GFLAGS})
+  # default path
+  set(GLOG_SOURCE_DIR ${GLOG_PREFIX}/src/glog-${glog_RELEASE})
+  set(GLOG_BINARY_DIR ${GLOG_PREFIX}/src/glog-${glog_RELEASE}-build)
 
-  set(GLOG_CONFIGURE ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/configure_with_gflags)
+  set(GLOG_CONFIGURE ${GLOG_PREFIX}/configure_with_gflags)
+  set(GLOG_CONFIGURE_TMP ${GLOG_PREFIX}/tmp/configure_with_gflags)
+
+  file(WRITE ${GLOG_CONFIGURE_TMP}
+    "#!/bin/sh
+export CPPFLAGS=-I${GFLAGS_INCLUDE_DIRS}
+export LDFLAGS=-L${GFLAGS_LIBRARY_PATH}
+export LIBS=-lgflags
+${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR}")
+
+  # add execute permission
+  file(COPY ${GLOG_CONFIGURE_TMP}
+    DESTINATION ${GLOG_PREFIX}
+    FILE_PERMISSIONS
+    OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   ExternalProject_Add(
     glog-${glog_RELEASE}
-    DEPENDS ${TARGET_GFLAGS}
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
+    DEPENDS gflags
+    PREFIX ${GLOG_PREFIX}
     GIT_REPOSITORY https://github.com/google/glog.git
     GIT_TAG v${glog_RELEASE}
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}
     CONFIGURE_COMMAND ${GLOG_CONFIGURE} --prefix=<INSTALL_DIR>
     BUILD_COMMAND make
     UPDATE_COMMAND ""
@@ -279,19 +229,30 @@ ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/configure")
     INSTALL_COMMAND ""
     )
 
-  # Set up variables
-  set(GLOG_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glog/glog-${glog_RELEASE}/src/
-    ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/src
-    )
-  set(GLOG_LIBRARIES
-    ${CMAKE_CURRENT_BINARY_DIR}/glog-${glog_RELEASE}/.libs/${CMAKE_FIND_LIBRARY_PREFIXES}glog.a
-    )
-  set(LOCAL_GLOG true CACHE STRING "Glog downloaded and built automatically" FORCE)
-else(NOT GLOG_FOUND OR ${LOCAL_GFLAGS})
+  ExternalProject_Get_Property(glog-${glog_RELEASE} binary_dir)
+  ExternalProject_Get_Property(glog-${glog_RELEASE} source_dir)
+
+  # set(GLOG_INCLUDE_DIRS ${binary_dir}/src CACHE PATH "Local glog headers")
+  set(GLOG_INCLUDE_DIRS ${binary_dir}/src CACHE PATH "Local glog headers")
+  set(GLOG_LIBRARY_PATH ${binary_dir}/.libs )
+
+  # WORKAROUND log_severity.h is missing
+  file(COPY ${source_dir}/src/glog/log_severity.h
+    DESTINATION ${GLOG_INCLUDE_DIRS}/glog)
+
+  # import built library as a new one
+  set(GLOG_LIBRARIES glog)
+  add_library(glog UNKNOWN IMPORTED)
+  set_target_properties(glog PROPERTIES IMPORTED_LOCATION ${GLOG_LIBRARY_PATH}/libglog.a)
+  add_dependencies(glog glog-${glog_RELEASE})
+
+  include_directories(${GLOG_INCLUDE_DIRS})
+  link_directories(${GLOG_LIBRARY_PATH})
+
+else(NOT GLOG_FOUND )
   add_library(glog-${glog_RELEASE} UNKNOWN IMPORTED)
-  set_property(TARGET glog-${glog_RELEASE} PROPERTY IMPORTED_LOCATION "${GLOG_LIBRARIES}")
-endif(NOT GLOG_FOUND OR ${LOCAL_GFLAGS})
+  set_target_properties(glog-${glog_RELEASE} PROPERTIES IMPORTED_LOCATION "${GLOG_LIBRARIES}")
+endif(NOT GLOG_FOUND )
 
 if(NOT ENABLE_LOG)
   message(STATUS "Logging is not enabled")
@@ -307,41 +268,47 @@ endif(NOT ENABLE_LOG)
 ################################################################################
 # mysqlcppconn - https://dev.mysql.com/downloads/connector/cpp/1.0.html
 ################################################################################
-set(mysqlcppconn_RELEASE 1.1.7)
+set(mysqlcppconn_RELEASE 1.1.6)
 find_package(MySQLConnectorCpp)
 if(NOT MYSQLCONNECTORCPP_FOUND)
-  message (STATUS " MYSQL-CONNECTOR-CPP has not been found.")
-  message (STATUS " MYSQL-CONNECTOR-CPP will be downloaded and built automatically ")
-  message (STATUS " when doing 'make'. ")
+  message (STATUS " mysql-connector c++ has not been found.")
+  message (STATUS " it will be downloaded and built automatically when doing 'make'.")
 
   ExternalProject_Add(
-    MySQLConnectorCpp
-    URL http://cdn.mysql.com//Downloads/Connector-C++/mysql-connector-c++-${mysqlcppconn_RELEASE}.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mysqlcppconn/mysqlcppconn-${mysqlcppconn_RELEASE}
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mysqlcppconn-${mysqlcppconn_RELEASE}
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-    BUILD_COMMAND make
-    UPDATE_COMMAND ""
-    PATCH_COMMAND ""
+    MySQLConnectorCpp-${mysqlcppconn_RELEASE}
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mysqlcppconn-${mysqlcppconn_RELEASE}
+    URL http://cdn.mysql.com/archives/mysql-connector-c++/mysql-connector-c++-${mysqlcppconn_RELEASE}.tar.gz
+    # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+    # BUILD_COMMAND make
     INSTALL_COMMAND ""
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
     LOG_CONFIGURE ON
-    LOG_BUILD ON)
+    LOG_BUILD ON
+    )
 
   # Specify include dir
-  ExternalProject_Get_Property(MySQLConnectorCpp source_dir)
-  set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${source_dir}/include)
+  ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} source_dir)
+  ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} binary_dir)
 
-  # Library
-  ExternalProject_Get_Property(MySQLConnectorCpp binary_dir)
-  set(MYSQLCONNECTORCPP_LIBRARY mysqlcppconn)
-  add_library(${MYSQLCONNECTORCPP_LIBRARY} UNKNOWN IMPORTED)
-  set_target_properties(${MYSQLCONNECTORCPP_LIBRARY} PROPERTIES
-    IMPORTED_LOCATION ${binary_dir}/libmysqlcppconn.a)
-  add_dependencies(${MYSQLCONNECTORCPP_LIBRARY} MySQLConnectorCpp)
+  set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${source_dir})
+  set(MYSQLCONNECTORCPP_LIBRARY_PATH ${binary_dir}/driver)
 
-  set(MYSQLCONNECTORCPP_LIBRARIES ${MYSQLCONNECTORCPP_LIBRARY})
+  file(COPY
+    ${source_dir}/driver/mysql_connection.h
+    ${source_dir}/driver/mysql_driver.h
+    ${source_dir}/driver/mysql_public_iface.h
+    DESTINATION ${MYSQLCONNECTORCPP_INCLUDE_DIRS})
+
+  set(MYSQLCONNECTORCPP_LIBRARIES mysqlcppconn)
+  add_library(mysqlcppconn UNKNOWN IMPORTED)
+  set_target_properties(mysqlcppconn PROPERTIES
+    IMPORTED_LOCATION ${MYSQLCONNECTORCPP_LIBRARY_PATH}/libmysqlcppconn.a)
+  add_dependencies(mysqlcppconn MySQLConnectorCpp)
+
+  include_directories(${MYSQLCONNECTORCPP_INCLUDE_DIRS})
+  link_directories(${MYSQLCONNECTORCPP_LIBRARY_PATH})
 
 endif(NOT MYSQLCONNECTORCPP_FOUND)
 

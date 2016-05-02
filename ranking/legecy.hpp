@@ -18,7 +18,7 @@ namespace ranking
 class Legecy : public Ranker
 {
  public:
-  void ranking(const JsonRequest&, JsonReply&) override;
+  void ranking(JsonRequest&, JsonReply&) override;
  private:
   LegecyDb db_;
 };

@@ -1,71 +1,51 @@
 # - Try to find GFlags
 #
 # The following variables are optionally searched for defaults
-# GFlags_ROOT_DIR: Base directory where all GFlags components are found
+# GFLAGS_ROOT_DIR: Base directory where all GFlags components are found
 #
-# The following are set after configuration is done:
-# GFlags_FOUND
-# GFlags_INCLUDE_DIRS
-# GFlags_LIBS
-# GFlags_LIBRARY_DIRS
-
 # - Try to find GFlags
 #
 #
 # The following are set after configuration is done:
-# GFlags_FOUND
-# GFlags_INCLUDE_DIRS
-# GFlags_LIBS
-# GFlags_LIBRARY_DIRS
-cmake_minimum_required(VERSION 2.6)
+# GFLAGS_FOUND
+# GFLAGS_INCLUDE_DIRS
+# GFLAGS_LIBRARIES
+# GFLAGS_LIBRARY_DIRS
 
-if(APPLE)
-     FIND_PATH(GFlags_ROOT_DIR
-     libgflags.dylib
-     PATHS
-     /opt/local/lib
-     /usr/local/lib
-     )
-else(APPLE)
-     FIND_PATH(GFlags_ROOT_DIR
-     libgflags.so
-     HINTS
-     /usr/local/lib
-     /usr/lib/x86_64-linux-gnu
-     /usr/lib/i386-linux-gnu
-     /usr/lib/arm-linux-gnueabihf
-     /usr/lib/arm-linux-gnueabi
-     /usr/lib/aarch64-linux-gnu
-     /usr/lib64
-     /usr/lib
-     )
-endif(APPLE)
+# We are testing only a couple of files in the include directories
+find_path(GFLAGS_INCLUDE_DIR
+  gflags/gflags.h
+  HINTS
+  /opt/local/include
+  /usr/local/include
+  /usr/include
+  ${GFLAGS_ROOT_DIR}/src
+  )
 
-IF(GFlags_ROOT_DIR)
-     # We are testing only a couple of files in the include directories
-          FIND_PATH(GFlags_INCLUDE_DIRS
-          gflags/gflags.h
-          HINTS
-          /opt/local/include
-          /usr/local/include
-          /usr/include
-          ${GFlags_ROOT_DIR}/src
-          )
+find_library(GFLAGS_LIBRARY
+  NAMES gflags
+  HINTS
+  /usr
+  /usr/local
+  PATH_SUFFIXES
+  x86_64-linux-gnu
+  i386-linux-gnu
+  lib64
+  lib)
 
-     # Find the libraries
-     SET(GFlags_LIBRARY_DIRS ${GFlags_ROOT_DIR})
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(gflags
+  DEFAULT_MSG
+  GFLAGS_INCLUDE_DIR GFLAGS_LIBRARY)
 
-     FIND_LIBRARY(GFlags_lib gflags ${GFlags_LIBRARY_DIRS})
+if (GFLAGS_FOUND)
+  set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
+  set(GFLAGS_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIR})
 
-     # set up include and link directory
-     include_directories(${GFlags_INCLUDE_DIRS})
-     link_directories(${GFlags_LIBRARY_DIRS})
-     message(STATUS "gflags library found at ${GFlags_lib}")
-     SET(GFlags_LIBS ${GFlags_lib})
-     SET(GFlags_FOUND true)
-     MARK_AS_ADVANCED(GFlags_INCLUDE_DIRS)
-ELSE(GFlags_ROOT_DIR)
-     MESSAGE(STATUS "Cannot find gflags")
-     SET(GFlags_FOUND false)
-ENDIF(GFlags_ROOT_DIR)
+  string(REGEX REPLACE "/libgflags.so" "" GFLAGS_LIBRARY_DIRS ${GFLAGS_LIBRARIES})
 
+  include_directories(${GFLAGS_INCLUDE_DIR})
+  link_directories(${GFLAGS_LIBRARY_DIR})
+
+  mark_as_advanced(GFLAGS_LIBRARIES GFLAGS_INCLUDE_DIRS)
+endif()

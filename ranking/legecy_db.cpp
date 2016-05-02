@@ -10,11 +10,7 @@
 #include <algorithm>
 #include <memory>
 
-#include <mysql_connection.h>
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
+#include <mysql_public_iface.h>
 
 #include <gflags/gflags.h>
 

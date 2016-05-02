@@ -5,13 +5,13 @@ add_executable(ranksvr ${SVR_SRCS} )
 include_directories(${PROJECT_SOURCE_DIR}/http
   ${PROJECT_SOURCE_DIR}/ranking)
 
-include_directories(${GLOG_INCLUDE_DIRS} ${GFlags_INCLUDE_DIRS})
+include_directories(${GLOG_INCLUDE_DIRS} ${GFLAGS_INCLUDE_DIRS})
 
 target_link_libraries(ranksvr
   http
   ranking
   ${Boost_LIBRARIES}
   ${GLOG_LIBRARIES}
-  ${GFlags_LIBS}
+  ${GFLAGS_LIBRARIES}
   ${MYSQLCONNECTORCPP_LIBRARIES}
   )
