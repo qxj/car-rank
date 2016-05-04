@@ -21,14 +21,14 @@ def main():
                         help='print verbose log')
     args = parser.parse_args()
 
-    url = "http://127.0.0.1:20164/legecy"
+    url = "http://127.0.0.1:20164/legacy"
     if args.url:
         url = args.url
 
     uri = urlparse.urlparse(url)
 
     data = {
-        "algo": "legecy",
+        "algo": "legacy",
         "car_list": [
             10003,
             10002,

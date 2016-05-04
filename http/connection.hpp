@@ -25,8 +25,6 @@
 namespace http {
 namespace server {
 
-class connection_manager;
-
 /// Represents a single connection from a client.
 class connection
     : public std::enable_shared_from_this<connection>,
@@ -35,7 +33,7 @@ class connection
 public:
   /// Construct a connection with the given socket.
   explicit connection(boost::asio::io_service& io_service,
-      connection_manager& manager, request_handler& handler);
+          request_handler& handler);
 
   /// Start the first asynchronous operation for the connection.
   void start();
@@ -58,9 +56,6 @@ private:
 
   /// Socket for the connection.
   boost::asio::ip::tcp::socket socket_;
-
-  /// The manager for this connection.
-  connection_manager& connection_manager_;
 
   /// The handler used to process the incoming request.
   request_handler& request_handler_;

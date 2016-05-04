@@ -12,7 +12,6 @@
 #include <vector>
 #include <glog/logging.h>
 
-#include "connection_manager.hpp"
 #include "request_handler.hpp"
 
 #include "connection.hpp"
@@ -21,9 +20,8 @@ namespace http {
 namespace server {
 
 connection::connection(boost::asio::io_service& io_service,
-    connection_manager& manager, request_handler& handler)
+        request_handler& handler)
   : socket_(io_service),
-    connection_manager_(manager),
     request_handler_(handler)
 {
 }
@@ -68,10 +66,10 @@ void connection::do_read()
             do_read();
           }
         }
-        else if (ec != boost::asio::error::operation_aborted)
-        {
-          connection_manager_.stop(shared_from_this());
-        }
+        // else if (ec != boost::asio::error::operation_aborted)
+        // {
+        //   connection_manager_.stop(shared_from_this());
+        // }
       });
 }
 
@@ -89,10 +87,10 @@ void connection::do_write()
             ignored_ec);
         }
 
-        if (ec != boost::asio::error::operation_aborted)
-        {
-          connection_manager_.stop(shared_from_this());
-        }
+        // if (ec != boost::asio::error::operation_aborted)
+        // {
+        //   connection_manager_.stop(shared_from_this());
+        // }
       });
 }
 

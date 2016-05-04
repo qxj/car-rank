@@ -58,7 +58,7 @@ void server::do_accept()
 {
   /// The next connection to be accepted.
   new_connection_.reset(new connection(
-      io_service_pool_.get_io_service(), connection_manager_, request_handler_));
+      io_service_pool_.get_io_service(), request_handler_));
 
   acceptor_.async_accept(new_connection_->socket(),
           [this](boost::system::error_code ec)
@@ -73,7 +73,8 @@ void server::do_accept()
         if (!ec)
         {
           VLOG(100) << "new connection " << new_connection_->socket().remote_endpoint();
-          connection_manager_.start(new_connection_);
+          // connection_manager_.start(new_connection_);
+          new_connection_->start();
         }
 
         do_accept();
@@ -85,11 +86,12 @@ void server::do_await_stop()
   signals_.async_wait(
       [this](boost::system::error_code /*ec*/, int /*signo*/)
       {
+        // acceptor_.close();
+        io_service_pool_.stop();
         // The server is stopped by cancelling all outstanding asynchronous
         // operations. Once all operations have finished the io_service::run()
         // call will exit.
-        acceptor_.close();
-        connection_manager_.stop_all();
+        // connection_manager_.stop_all();
       });
 }
 

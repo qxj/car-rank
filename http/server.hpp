@@ -15,7 +15,7 @@
 #include <boost/noncopyable.hpp>
 #include <string>
 #include "connection.hpp"
-#include "connection_manager.hpp"
+// #include "connection_manager.hpp"
 #include "io_service_pool.hpp"
 #include "request_handler.hpp"
 
@@ -62,7 +62,7 @@ private:
   connection_ptr new_connection_;
 
   /// The connection manager which owns all live connections.
-  connection_manager connection_manager_;
+  // connection_manager connection_manager_;
 
   /// The handler for all incoming requests.
   request_handler request_handler_;

@@ -39,25 +39,36 @@ void io_service_pool::run()
 {
   // Create a pool of threads to run all of the io_services.
   std::vector<std::shared_ptr<std::thread> > threads;
-  for (auto ios: io_services_)
+  for (std::size_t i = 0; i < io_services_.size(); ++i)
+  // for (auto ios: io_services_)
   {
+    // std::shared_ptr<std::thread> thread(new std::thread(
+    //     [&]{ios->run();}));
     std::shared_ptr<std::thread> thread(new std::thread(
-        [&]{ios->run();}));
+        [&]{
+          io_services_[i]->run();
+        }));
     threads.push_back(thread);
   }
 
   // Wait for all threads in the pool to exit.
-  for (auto thread: threads) {
-    thread->join();
+  // for (auto thread: threads) {
+  //   thread->join();
+  // }
+  for (std::size_t i = 0; i < threads.size(); ++i) {
+    threads[i]->join();
   }
 }
 
 void io_service_pool::stop()
 {
   // Explicitly stop all io_services.
-  for (auto ios: io_services_) {
-    ios->stop();
+  for (std::size_t i = 0; i < io_services_.size(); ++i) {
+    io_services_[i]->stop();
   }
+  // for (auto ios: io_services_) {
+  //   ios->stop();
+  // }
 }
 
 boost::asio::io_service& io_service_pool::get_io_service()

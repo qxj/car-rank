@@ -23,10 +23,11 @@ class dummy_server : public server
   {}
   void dummy_handler(const request& req, reply& rep)
   {
+    dummy.append(req.content);
     rep.add_content(dummy);
   }
  private:
-  std::string dummy = "dummy server";
+  std::string dummy = "dummy server:\n";
 };
 
 int main(int argc, char *argv[])
