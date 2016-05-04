@@ -1,0 +1,17 @@
+### google gflags configuration file
+--host=0.0.0.0
+--port=20164
+--my_host=127.0.0.1
+--my_user=root
+--my_passwd=root
+--my_dbname=test
+--daemon=true
+--lock_file=/tmp/rank_svr.pid
+### glog
+--logtostderr=false
+--log_dir=/var/tmp
+## MB
+--max_log_size=20
+## 0: INFO, WARNING, ERROR, FATAL
+--minloglevel=0
+-v=0

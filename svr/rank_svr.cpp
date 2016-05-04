@@ -7,15 +7,19 @@
 // @created   2016-04-24 23:02:37
 //
 
+#include <glog/logging.h>
+
 #include "rank_svr.hpp"
 
 void
-RankSvr::legecy_handler(const http::server::request& req, http::server::reply& rep)
+RankSvr::legacy_handler(const http::server::request& req, http::server::reply& rep)
 {
   ranking::JsonRequest jreq;
   ranking::JsonReply jrep;
+  VLOG(100) << "request content " << req.content;
   parser_.parse_request(req.content, jreq);
-  legecy_.ranking(jreq, jrep);
+  legacy_.ranking(jreq, jrep);
   parser_.reply_string(jrep, rep.content);
+  VLOG(100) << "reply content " << rep.content;
   rep.add_content_type("plain/json");
 }

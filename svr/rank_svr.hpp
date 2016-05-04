@@ -11,7 +11,7 @@
 #define RANK_SVR_HPP_
 
 #include "server.hpp"
-#include "legecy.hpp"
+#include "legacy.hpp"
 #include "json_parser.hpp"
 
 class RankSvr : public http::server::server
@@ -19,9 +19,9 @@ class RankSvr : public http::server::server
  public:
   RankSvr(const std::string& address, short port)
       : http::server::server(address, port) {}
-  void legecy_handler(const http::server::request& req, http::server::reply& rep);
+  void legacy_handler(const http::server::request& req, http::server::reply& rep);
  private:
-  ranking::Legecy legecy_;
+  ranking::Legacy legacy_;
   ranking::JsonParser parser_;
 };
 

@@ -47,7 +47,7 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "") # remove -rdynamic
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 # set(CMAKE_EXE_LINKER_FLAGS "-static")
-# set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 link_libraries(pthread)
 
@@ -134,11 +134,6 @@ if(NOT GTest_FOUND)
   add_dependencies(${GTEST_MAIN_LIBRARY} googletest)
 
 endif(NOT GTest_FOUND)
-
-
-# enable_testing()
-# find_package(GTest REQUIRED)
-# include_directories(${GTEST_INCLUDE_DIRS})
 
 
 ################################################################################
@@ -257,15 +252,10 @@ else(NOT GLOG_FOUND )
   set_target_properties(glog-${glog_RELEASE} PROPERTIES IMPORTED_LOCATION "${GLOG_LIBRARIES}")
 endif(NOT GLOG_FOUND )
 
-if(NOT ENABLE_LOG)
-  message(STATUS "Logging is not enabled")
-  add_definitions(-DGOOGLE_STRIP_LOG=1)
-endif(NOT ENABLE_LOG)
-
-
-# enable_testing()
-# add_subdirectory(thirdparty/gtest-1.6.0)
-# include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+# if(NOT ENABLE_LOG)
+#   message(STATUS "Logging is not enabled")
+#   add_definitions(-DGOOGLE_STRIP_LOG=1)
+# endif(NOT ENABLE_LOG)
 
 
 ################################################################################
@@ -322,4 +312,5 @@ endif(NOT MYSQLCONNECTORCPP_FOUND)
 
 add_subdirectory(svr)
 add_subdirectory(http)
+add_subdirectory(util)
 add_subdirectory(ranking)

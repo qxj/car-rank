@@ -2,13 +2,13 @@
 //
 // Copyright (C) 2016 Julian Qian
 //
-// @file      legecy_db.hpp
+// @file      legacy_db.hpp
 // @author    Julian Qian <junist@gmail.com>
 // @created   2016-04-24 19:34:55
 //
 
-#ifndef LEGECY_DB_HPP_
-#define LEGECY_DB_HPP_
+#ifndef LEGACY_DB_HPP_
+#define LEGACY_DB_HPP_
 
 #include <boost/noncopyable.hpp>
 
@@ -22,11 +22,11 @@ class Driver;
 
 namespace ranking
 {
-class LegecyDb : private boost::noncopyable
+class LegacyDb : private boost::noncopyable
 {
  public:
-  LegecyDb();
-  ~LegecyDb();
+  LegacyDb();
+  ~LegacyDb();
 
   void query_scores(JsonRequest::CarsType& cars);
  private:
@@ -35,4 +35,4 @@ class LegecyDb : private boost::noncopyable
 
 }
 
-#endif // LEGECY_DB_HPP_
+#endif // LEGACY_DB_HPP_

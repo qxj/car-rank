@@ -1,6 +1,3 @@
-# aux_source_directory(. RANKING_SRCS)
-
-# add_library(ranking ${RANKING_SRCS})
 
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
 

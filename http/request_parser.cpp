@@ -292,7 +292,7 @@ request_parser::result_type request_parser::consume(request& req, char input)
     case content:
       {
         req.content.push_back(input);
-        VLOG(100) << "parse content " << (char) input << ", size: " << req.content.size() << "/" << req.content_length();
+        VLOG(1000) << "parse content " << (char) input << ", size: " << req.content.size() << "/" << req.content_length();
         state_ = content;
         if (req.content_length() == req.content.size()) {
           return good;

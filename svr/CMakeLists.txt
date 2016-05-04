@@ -5,11 +5,13 @@ add_executable(ranksvr ${SVR_SRCS} )
 include_directories(${PROJECT_SOURCE_DIR}/http
   ${PROJECT_SOURCE_DIR}/ranking)
 
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty)
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty
+  ${CMAKE_SOURCE_DIR}/util)
 
 include_directories(${GLOG_INCLUDE_DIRS} ${GFLAGS_INCLUDE_DIRS})
 
 target_link_libraries(ranksvr
+  util
   http
   ranking
   ${Boost_LIBRARIES}

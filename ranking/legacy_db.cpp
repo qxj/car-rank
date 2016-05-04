@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2016 Julian Qian
 //
-// @file      legecy_db.cpp
+// @file      legacy_db.cpp
 // @author    Julian Qian <junist@gmail.com>
 // @created   2016-04-24 20:20:52
 //
@@ -16,7 +16,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "legecy_db.hpp"
+#include "legacy_db.hpp"
 
 DEFINE_string(my_host, "tcp://127.0.0.1:3306", "mysql host");
 DEFINE_string(my_user, "root", "mysql user");
@@ -25,19 +25,19 @@ DEFINE_string(my_dbname, "test", "mysql database");
 
 namespace ranking
 {
-LegecyDb::LegecyDb()
+LegacyDb::LegacyDb()
 {
   // not thread-safe
   driver_ = sql::mysql::get_driver_instance();
 }
 
-LegecyDb::~LegecyDb()
+LegacyDb::~LegacyDb()
 {
   // delete driver_;
 }
 
 void
-LegecyDb::query_scores(JsonRequest::CarsType& cars)
+LegacyDb::query_scores(JsonRequest::CarsType& cars)
 {
   try {
     std::unique_ptr<sql::Connection> conn(driver_->connect(
@@ -47,7 +47,7 @@ LegecyDb::query_scores(JsonRequest::CarsType& cars)
 
     std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 
-    std::string sql{"select car_id, score from car_rank_legecy where car_id in ("};
+    std::string sql{"select car_id, score from car_rank_legacy where car_id in ("};
 
     std::for_each(cars.begin(), cars.end(),
                   [&sql](CarInfo& c)
