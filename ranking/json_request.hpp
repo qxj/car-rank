@@ -10,8 +10,9 @@
 #ifndef JSON_REQUEST_HPP_
 #define JSON_REQUEST_HPP_
 
-#include <vector>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace ranking {
 
@@ -20,10 +21,27 @@ struct CarInfo
   int car_id;
   float distance;
   float price;
-  float score;
+
+  // to be fetched from db
+  float quality;    // car quality score
+  float preference; // user preference score
 
   CarInfo(int car_id, float distance=0, float price=0)
-      : car_id(car_id) , distance(distance), price(price) {}
+      : car_id(car_id) , distance(distance), price(price),
+        quality(0), preference(0)
+  {}
+
+  std::tuple<float, float, float> trans_distance() const {
+    float d1{0}, d2{0}, d3{0};
+    if (distance < 2) {
+      d1 = 1;
+    } else if (distance < 5) {
+      d2 = 1;
+    } else if (distance < 20) {
+      d3 = 1 - distance / 20;
+    }
+    return std::make_tuple(d1, d2, d3);
+  }
 };
 
 struct JsonRequest

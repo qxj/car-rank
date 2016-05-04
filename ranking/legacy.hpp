@@ -18,8 +18,12 @@ namespace ranking
 class Legacy : public Ranker
 {
  public:
+  Legacy();
   void ranking(JsonRequest&, JsonReply&) override;
  private:
+  float score_func(JsonRequest::CarsType& cars);
+ private:
+  LegacyAlgo algo_;
   LegacyDb db_;
 };
 }
