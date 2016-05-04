@@ -10,6 +10,8 @@
 #ifndef LEGACY_DB_HPP_
 #define LEGACY_DB_HPP_
 
+#include <mutex>
+
 #include <boost/noncopyable.hpp>
 
 #include "json_request.hpp"
@@ -31,6 +33,7 @@ class LegacyDb : private boost::noncopyable
   void query_scores(JsonRequest::CarsType& cars);
  private:
   sql::Driver* driver_;
+  std::mutex mutex_;
 };
 
 }

@@ -26,7 +26,9 @@ DEFINE_string(my_dbname, "test", "mysql database");
 namespace ranking
 {
 LegacyDb::LegacyDb()
+    : driver_(nullptr), mutex_()
 {
+  std::lock_guard<std::mutex> lock(mutex_);
   // not thread-safe
   driver_ = sql::mysql::get_driver_instance();
 }
@@ -39,6 +41,7 @@ LegacyDb::~LegacyDb()
 void
 LegacyDb::query_scores(JsonRequest::CarsType& cars)
 {
+  driver_->threadInit();
   try {
     std::unique_ptr<sql::Connection> conn(driver_->connect(
         FLAGS_my_host, FLAGS_my_user, FLAGS_my_passwd));
@@ -78,5 +81,7 @@ LegacyDb::query_scores(JsonRequest::CarsType& cars)
     LOG(ERROR) << "Mysql error " << e.what()
                << ", SQLState: " << e.getSQLState() ;
   }
+
+  driver_->threadEnd();
 }
 }

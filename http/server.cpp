@@ -85,9 +85,11 @@ void server::do_accept()
 void server::do_await_stop()
 {
   signals_.async_wait(
-      [this](boost::system::error_code /*ec*/, int /*signo*/)
+      [this](boost::system::error_code ec, int signo)
       {
-        // acceptor_.close();
+        VLOG(100) << "catch quit signal " << signo;
+
+        acceptor_.close();
         io_service_pool_.stop();
         // The server is stopped by cancelling all outstanding asynchronous
         // operations. Once all operations have finished the io_service::run()

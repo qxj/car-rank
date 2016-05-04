@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     LOG(ERROR) << "exception: " << e.what() ;
   }
 
-  LOG(INFO) << "QUIT rank server."
+  LOG(INFO) << "QUIT rank server.";
 
   return 0;
 }

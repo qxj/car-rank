@@ -12,6 +12,8 @@
 #include <thread>
 #include <functional>
 
+#include <glog/logging.h>
+
 #include "io_service_pool.hpp"
 
 
@@ -57,6 +59,8 @@ void io_service_pool::run()
   // }
   for (std::size_t i = 0; i < threads.size(); ++i) {
     threads[i]->join();
+
+    VLOG(100) << "joined thread " << i;
   }
 }
 
