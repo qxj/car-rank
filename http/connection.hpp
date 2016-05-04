@@ -2,7 +2,7 @@
 // connection.hpp
 // ~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2013 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -13,7 +13,10 @@
 
 #include <array>
 #include <memory>
+
 #include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
+
 #include "reply.hpp"
 #include "request.hpp"
 #include "request_handler.hpp"
@@ -26,14 +29,12 @@ class connection_manager;
 
 /// Represents a single connection from a client.
 class connection
-  : public std::enable_shared_from_this<connection>
+    : public std::enable_shared_from_this<connection>,
+      private boost::noncopyable
 {
 public:
-  connection(const connection&) = delete;
-  connection& operator=(const connection&) = delete;
-
   /// Construct a connection with the given socket.
-  explicit connection(boost::asio::ip::tcp::socket socket,
+  explicit connection(boost::asio::io_service& io_service,
       connection_manager& manager, request_handler& handler);
 
   /// Start the first asynchronous operation for the connection.
@@ -41,6 +42,12 @@ public:
 
   /// Stop all asynchronous operations associated with the connection.
   void stop();
+
+  /// Get the socket associated with the connection.
+  boost::asio::ip::tcp::socket& socket() {
+    return socket_;
+  }
+
 
 private:
   /// Perform an asynchronous read operation.

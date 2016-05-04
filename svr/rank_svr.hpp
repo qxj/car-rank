@@ -17,8 +17,7 @@
 class RankSvr : public http::server::server
 {
  public:
-  RankSvr(const std::string& address, short port)
-      : http::server::server(address, port) {}
+  RankSvr(const std::string& address, short port);
   void legacy_handler(const http::server::request& req, http::server::reply& rep);
  private:
   ranking::Legacy legacy_;

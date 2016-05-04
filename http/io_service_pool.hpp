@@ -11,10 +11,11 @@
 #ifndef HTTP_SERVER_IO_SERVICE_POOL_HPP
 #define HTTP_SERVER_IO_SERVICE_POOL_HPP
 
-#include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
 #include <memory>
 #include <vector>
+
+#include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace http {
 namespace server {

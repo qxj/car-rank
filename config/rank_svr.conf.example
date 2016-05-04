@@ -7,6 +7,7 @@
 --my_dbname=test
 --daemon=true
 --lock_file=/tmp/rank_svr.pid
+--thread_pool_size=4
 ### glog
 --logtostderr=false
 --log_dir=/var/tmp

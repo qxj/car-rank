@@ -17,11 +17,10 @@
 namespace http {
 namespace server {
 
-server::server(const std::string& address, short port)
-  : io_service_(),
-    signals_(io_service_),
-    acceptor_(io_service_),
-    socket_(io_service_),
+server::server(const std::string& address, short port, std::size_t io_service_pool_size)
+  : io_service_pool_(io_service_pool_size),
+    signals_(io_service_pool_.get_io_service()),
+    acceptor_(io_service_pool_.get_io_service()),
     request_handler_()
 {
   // Register to handle the signals that indicate when the server should exit.
@@ -52,13 +51,17 @@ void server::run()
   // have finished. While the server is running, there is always at least one
   // asynchronous operation outstanding: the asynchronous accept call waiting
   // for new incoming connections.
-  io_service_.run();
+  io_service_pool_.run();
 }
 
 void server::do_accept()
 {
-  acceptor_.async_accept(socket_,
-      [this](boost::system::error_code ec)
+  /// The next connection to be accepted.
+  new_connection_.reset(new connection(
+      io_service_pool_.get_io_service(), connection_manager_, request_handler_));
+
+  acceptor_.async_accept(new_connection_->socket(),
+          [this](boost::system::error_code ec)
       {
         // Check whether the server was stopped by a signal before this
         // completion handler had a chance to run.
@@ -69,9 +72,8 @@ void server::do_accept()
 
         if (!ec)
         {
-          VLOG(100) << "new connection " << socket_.remote_endpoint();
-          connection_manager_.start(std::make_shared<connection>(
-              std::move(socket_), connection_manager_, request_handler_));
+          VLOG(100) << "new connection " << new_connection_->socket().remote_endpoint();
+          connection_manager_.start(new_connection_);
         }
 
         do_accept();

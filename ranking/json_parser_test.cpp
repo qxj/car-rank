@@ -32,14 +32,14 @@ class JsonParserTest: public ::testing::Test
 TEST_F(JsonParserTest, json_to_request)
 {
   std::string json = "{"
-      "\"algo\": \"legecy\","
+      "\"algo\": \"legacy\","
       "\"car_list\": [1, 2, 3, 4],"
       "\"distance\": [0.1,0.2,0.3,0.4],"
       "\"user_id\": 1234}";
   ranking::JsonRequest request;
   int ret = parser.parse_request(json, request);
   EXPECT_EQ(0, ret);
-  EXPECT_TRUE(request.algo == "legecy");
+  EXPECT_TRUE(request.algo == "legacy");
   // std::cerr << "Request algo " << request.algo << "\n";
   EXPECT_EQ(1234, request.user_id);
   EXPECT_EQ(4, request.cars.size());

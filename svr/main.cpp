@@ -1,11 +1,10 @@
+// -*- mode: c++ -*-
 //
-// main.cpp
-// ~~~~~~~~
+// Copyright (C) 2016 Julian Qian
 //
-// Copyright (c) 2003-2013, 2016 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+// @file      main.cpp
+// @author    Julian Qian <junist@gmail.com>
+// @created   2016-05-04 16:37:58
 //
 
 #include <iostream>
@@ -48,8 +47,8 @@ int main(int argc, char* argv[])
     // Initialise the server.
     RankSvr s(FLAGS_host, static_cast<short>(FLAGS_port));
 
-    s.add_handler("/legecy", std::bind(
-        &RankSvr::legecy_handler, &s, _1, _2));
+    s.add_handler("/legacy", std::bind(
+        &RankSvr::legacy_handler, &s, _1, _2));
 
     // Run the server until stopped.
     s.run();

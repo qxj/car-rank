@@ -7,9 +7,16 @@
 // @created   2016-04-24 23:02:37
 //
 
+#include <gflags/gflags.h>
 #include <glog/logging.h>
 
 #include "rank_svr.hpp"
+
+DEFINE_int32(thread_pool_size, 4, "rank server thread pool size");
+
+RankSvr::RankSvr(const std::string& address, short port)
+    : http::server::server(address, port, FLAGS_thread_pool_size)
+{}
 
 void
 RankSvr::legacy_handler(const http::server::request& req, http::server::reply& rep)

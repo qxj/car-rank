@@ -20,9 +20,9 @@
 namespace http {
 namespace server {
 
-connection::connection(boost::asio::ip::tcp::socket socket,
+connection::connection(boost::asio::io_service& io_service,
     connection_manager& manager, request_handler& handler)
-  : socket_(std::move(socket)),
+  : socket_(io_service),
     connection_manager_(manager),
     request_handler_(handler)
 {

@@ -1,3 +1,6 @@
 [submodule "legecy/pdlib"]
 	path = legecy/pdlib
 	url = ssh://git@stash.dzuche.com:7999/pdsa/pdlib.git
+[submodule "legacy/pdlib"]
+	path = legacy/pdlib
+	url = ssh://git@stash.dzuche.com:7999/pdsa/pdlib.git
