@@ -6,6 +6,7 @@
 --my_passwd=root
 --my_dbname=test
 --daemon=true
+--dry=false
 --lock_file=/tmp/rank_svr.pid
 --thread_pool_size=4
 ### glog

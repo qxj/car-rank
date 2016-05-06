@@ -13,6 +13,7 @@
 #include "rank_svr.hpp"
 
 DEFINE_int32(thread_pool_size, 4, "rank server thread pool size");
+DECLARE_bool(dry);
 
 RankSvr::RankSvr(const std::string& address, short port)
     : http::server::server(address, port, FLAGS_thread_pool_size)
@@ -26,7 +27,11 @@ RankSvr::legacy_handler(const http::server::request& req, http::server::reply& r
   VLOG(100) << "request content " << req.content;
   int ret = parser_.parse_request(req.content, jreq);
   if (!ret) {
-    legacy_.ranking(jreq, jrep);
+    if (FLAGS_dry) {
+      jrep.from_request(jreq);
+    } else {
+      legacy_.ranking(jreq, jrep);
+    }
   }
   // TODO error handling
   parser_.reply_string(jrep, rep.content);
