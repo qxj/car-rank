@@ -57,7 +57,13 @@ include( FindPackageHandleStandardArgs )
 find_package_handle_standard_args(MYSQL DEFAULT_MSG
   MYSQL_LIBRARY MYSQL_INCLUDE_DIR)
 
-set( MYSQL_INCLUDE_DIRS ${MYSQL_INCLUDE_DIR} )
-set( MYSQL_LIBRARIES ${MYSQL_LIBRARY} )
+if (MYSQL_FOUND)
+  message(STATUS "Found MySQL client library ${MYSQL_LIBRARY}")
+
+  set( MYSQL_INCLUDE_DIRS ${MYSQL_INCLUDE_DIR} )
+  set( MYSQL_LIBRARIES ${MYSQL_LIBRARY} )
+
+endif(MYSQL_FOUND)
+
 
 mark_as_advanced( MYSQL_INCLUDE_DIR MYSQL_LIBRARY )

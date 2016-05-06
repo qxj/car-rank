@@ -115,7 +115,7 @@ LegacyDb::fetch_scores(JsonRequest& req)
 
     // car_rank_legecy
     {
-      std::string sql{"select car_id, score from car_rank_legacy where car_id in ("};
+      std::string sql{"select car_id, quality from car_rank_legacy where car_id in ("};
       std::for_each(cars.begin(), cars.end(),
               [&sql](CarInfo& c)
               {
@@ -130,11 +130,11 @@ LegacyDb::fetch_scores(JsonRequest& req)
       std::unordered_map<int, float> qualities;
       while (res->next()) {
         int car_id = res->getInt("car_id");
-        float score = static_cast<float>(res->getDouble("score"));
+        float score = static_cast<float>(res->getDouble("quality"));
         qualities[car_id] = score;
       }
 
-      VLOG(100) << "loaded " << res->rowsCount() << " car scores";
+      VLOG(100) << "loaded " << res->rowsCount() << " car quality scores";
 
       for (auto& car: cars) {
         car.quality = qualities[car.car_id];
