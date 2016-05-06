@@ -24,8 +24,11 @@ RankSvr::legacy_handler(const http::server::request& req, http::server::reply& r
   ranking::JsonRequest jreq;
   ranking::JsonReply jrep;
   VLOG(100) << "request content " << req.content;
-  parser_.parse_request(req.content, jreq);
-  legacy_.ranking(jreq, jrep);
+  int ret = parser_.parse_request(req.content, jreq);
+  if (!ret) {
+    legacy_.ranking(jreq, jrep);
+  }
+  // TODO error handling
   parser_.reply_string(jrep, rep.content);
   VLOG(100) << "reply content " << rep.content;
   rep.add_content_type("plain/json");

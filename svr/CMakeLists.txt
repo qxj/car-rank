@@ -18,5 +18,7 @@ target_link_libraries(ranksvr
   ${GLOG_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${MYSQLCONNECTORCPP_LIBRARIES}
-  mysqlclient_r
+  ${MYSQL_LIBRARIES}
+  ${ZLIB_LIBRARIES}
+  ${CMAKE_DL_LIBS}
   )

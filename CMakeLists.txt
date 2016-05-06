@@ -26,7 +26,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   endif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
 endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -Wl,--no-as-needed")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
@@ -52,6 +52,25 @@ set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 link_libraries(pthread)
 
 include(ExternalProject)
+
+################################################################################
+# MySQL client library
+################################################################################
+find_package(MySQL REQUIRED)
+if ( MYSQL_FOUND )
+  include_directories( ${MYSQL_INCLUDE_DIRS} )
+  # target_link_libraries( ranking ${MYSQL_LIBRARIES} )
+endif( MYSQL_FOUND )
+
+################################################################################
+# zlib
+################################################################################
+find_package(ZLIB REQUIRED)
+if ( ZLIB_FOUND )
+  include_directories( ${ZLIB_INCLUDE_DIRS} )
+  # target_link_libraries( ranking ${ZLIB_LIBRARIES} )
+endif( ZLIB_FOUND )
+
 
 ################################################################################
 # Boost - http://www.boost.org
@@ -83,6 +102,7 @@ endif(NOT Boost_FOUND)
 
 # find_package(Boost REQUIRED)
 # include_directories(${Boost_INCLUDE_DIRS})
+
 
 ################################################################################
 # Googletest - https://github.com/google/googletest
@@ -177,6 +197,8 @@ if (NOT GFLAGS_FOUND)
   link_directories(${GFLAGS_LIBRARY_PATH})
 endif(NOT GFLAGS_FOUND)
 
+# TODO find autoconf automake 1.14+ for glog build
+
 ################################################################################
 # glog - https://github.com/google/glog
 ################################################################################
@@ -202,8 +224,11 @@ if (NOT GLOG_FOUND)
     "#!/bin/sh
 export CPPFLAGS=-I${GFLAGS_INCLUDE_DIRS}
 export LDFLAGS=-L${GFLAGS_LIBRARY_PATH}
-export LIBS=-lgflags
-${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR}")
+# export LIBS=-lgflags
+${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR}
+# workaround in centos 6.5
+cd ${GLOG_SOURCE_DIR} && automake --add-missing
+")
 
   # add execute permission
   file(COPY ${GLOG_CONFIGURE_TMP}

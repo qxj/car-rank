@@ -41,9 +41,15 @@ JsonParser::parse_request(const std::string& json_string,
   }
   // car_id list
   const Value& car_ids = doc_["car_list"];
+  if (car_ids.Size() == 0) {
+    VLOG(100) << "car_list is empty, abort parser";
+    return -1;
+  }
   Value::ConstMemberIterator itr1 = doc_.FindMember("distance");
   Value::ConstMemberIterator itr2 = doc_.FindMember("price");
   auto& cars = json_request.cars;
+  // TODO limit cars capacity
+  constexpr size_t limit = 500;
   for (SizeType i=0; i < car_ids.Size(); i++) {
     float distance = (itr1 != doc_.MemberEnd()) ? static_cast<float>(itr1->value[i].GetDouble()) : 0;
     float price = (itr2 != doc_.MemberEnd()) ? static_cast<float>(itr2->value[i].GetDouble()) : 0;

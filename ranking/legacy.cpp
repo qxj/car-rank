@@ -22,23 +22,33 @@ Legacy::Legacy()
 void
 Legacy::ranking(ranking::JsonRequest & req, ranking::JsonReply & rep)
 {
-  db_.query_scores(req);
+  db_.fetch_scores(req);
   JsonRequest::CarsType& cars = req.cars;
-  // const auto& weights = algo_.get_weights(req.algo);
-  float w_quality    = algo_.get_weight(req.algo, "quality");
-  float w_preference = algo_.get_weight(req.algo, "preference");
-  float w_distance1  = algo_.get_weight(req.algo, "distance1");
-  float w_distance2  = algo_.get_weight(req.algo, "distance2");
-  float w_distance3  = algo_.get_weight(req.algo, "distance3");
+
+  const auto& weights = algo_.get_weights(req.algo);
 
   std::sort(cars.begin(), cars.end(),
-            [](const CarInfo& a, const CarInfo& b) {
-              // linear function
-              float sa, sb;
-              float d1, d2, d3;
-              std::tie(d1, d2, d3) = a.trans_distance();
-
-              return ;
+            [this, &weights](const CarInfo& a, const CarInfo& b) {
+              return score_func(a, weights) > score_func(b, weights);
             });
   rep.from_request(req);
+}
+
+float
+Legacy::score_func(const CarInfo& ci, const LegacyAlgo::Weights& ws)
+{
+  float d1, d2, d3;
+  std::tie(d1, d2, d3) = ci.trans_distance();
+
+  float w_quality    = ws.get_weight("quality");
+  float w_preference = ws.get_weight("preference");
+  float w_distance1  = ws.get_weight("distance1");
+  float w_distance2  = ws.get_weight("distance2");
+  float w_distance3  = ws.get_weight("distance3");
+
+  float s;
+
+  s = w_quality * ci.quality + w_preference * ci.preference + \
+      w_distance1 * d1 + w_distance2 * d2 + w_distance3 * d3;
+  return s;
 }

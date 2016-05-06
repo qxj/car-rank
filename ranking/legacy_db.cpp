@@ -30,7 +30,7 @@ DEFINE_string(my_dbname, "test", "mysql database");
 namespace ranking
 {
 
-const FeatWeightMap&
+const LegacyAlgo::Weights&
 LegacyAlgo::get_weights(const std::string& algo)
 {
   const auto& itr = algos_.find(algo);
@@ -47,11 +47,7 @@ LegacyAlgo::get_weight(const std::string& algo, const std::string& feat)
   // FIXME shared lock
   const auto& itr = algos_.find(algo);
   if (itr != algos_.end()) {
-    const FeatWeightMap& weights = itr->second;
-    const auto& it = weights.find(feat);
-    if (it != weights.end()) {
-      return it->second;
-    }
+    return itr->second.get_weight(feat);
   }
   LOG(WARNING) << "missing feature weight: algo " << algo << ", feat " << feat;
   return 0;
@@ -71,7 +67,7 @@ LegacyDb::~LegacyDb()
 }
 
 void
-LegacyDb::query_scores(JsonRequest& req)
+LegacyDb::fetch_scores(JsonRequest& req)
 {
   driver_->threadInit();
   try {
@@ -82,33 +78,43 @@ LegacyDb::query_scores(JsonRequest& req)
 
     std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 
+    // combine car ids
+    JsonRequest::CarsType& cars = req.cars;
+    std::string cars_sql;
+    std::for_each(cars.begin(), cars.end(),
+                  [&cars_sql](CarInfo& c)
+                  {
+                    cars_sql.append(std::to_string(c.car_id));
+                    cars_sql.push_back(',');
+                  });
+    if (!cars_sql.empty()) {
+      // remove trailing comma
+      cars_sql.erase(cars_sql.end() -1);
+    }
+
     // TODO cache collected_cars for users
-    std::set<int> collected_cars;
+    std::unordered_map<int, float> prefs;
     // car_rank_users
     {
-      std::string sql{"select collected_cars from car_rank_users where user_id="};
+      std::string sql{"select car_id, preference from car_rank_users where expired=0 and user_id="};
       sql.append(std::to_string(req.user_id));
+      sql.append(" and car_id in (");
+      sql.append(cars_sql);
+      sql.append(") limit 200");
+
+      VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      if (res->next()) {
-        std::string collected{res->getString("collected_cars")};
-        std::vector<std::string> car_ids;
-        boost::split(car_ids, collected, boost::is_any_of(","),
-                boost::token_compress_on);
-        // WORKAROUND keep a small vector for locality, otherwise we need a map
-        constexpr size_t limit = 100;
-        if (car_ids.size() > limit) {
-          car_ids.erase(car_ids.begin() + limit, car_ids.end());
-        }
-        for (const auto& ci : car_ids) {
-          collected_cars.insert(std::stoi(ci));
-        }
+      while (res->next()) {
+        int car_id = res->getInt("car_id");
+        float pref = static_cast<float>(res->getDouble("preference"));
+        prefs[car_id] = pref;
       }
+      VLOG(100) << "loaded " << res->rowsCount() << " user preferences";
     }
 
     // car_rank_legecy
     {
-      JsonRequest::CarsType& cars = req.cars;
       std::string sql{"select car_id, score from car_rank_legacy where car_id in ("};
       std::for_each(cars.begin(), cars.end(),
               [&sql](CarInfo& c)
@@ -117,22 +123,24 @@ LegacyDb::query_scores(JsonRequest& req)
                 sql.push_back(',');
               });
       sql.back() = ')';
+
       VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      std::unordered_map<int, float> car_scores;
+      std::unordered_map<int, float> qualities;
       while (res->next()) {
         int car_id = res->getInt("car_id");
         float score = static_cast<float>(res->getDouble("score"));
-        car_scores[car_id] = score;
-        VLOG(100) << "car_id " << car_id << ", score " << score;
+        qualities[car_id] = score;
       }
 
+      VLOG(100) << "loaded " << res->rowsCount() << " car scores";
+
       for (auto& car: cars) {
-        car.quality = car_scores[car.car_id];
-        auto& itr = collected_cars.find(car.car_id);
-        if (itr != collected_cars.end()) {
-          car.is_collected = 1;
+        car.quality = qualities[car.car_id];
+        auto itr = prefs.find(car.car_id);
+        if (itr != prefs.end()) {
+          car.preference = itr->second;
         }
       }
     }
@@ -157,11 +165,12 @@ LegacyDb::fetch_algos(LegacyAlgo& algo)
 
     std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 
-    std::string sql{"select algo, name, weight from car_rank_weights where enabled=1"};
-
-    VLOG(100) << "query sql: " << sql;
-
     {
+
+      std::string sql{"select algo, name, weight from car_rank_weights where enabled=1"};
+
+      VLOG(100) << "sql: " << sql;
+
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
       algo.clear();
       while (res->next()) {
@@ -173,7 +182,7 @@ LegacyDb::fetch_algos(LegacyAlgo& algo)
         VLOG(100) << "algo " << algo_name << ", feat " << feat_name
                   << ", weight " << weight;
       }
-      LOG(INFO) << "loaded " << algos.size() << " algos, and "
+      LOG(INFO) << "loaded " << algo.size() << " algos, and "
                 << res->rowsCount() << " weights";
     }
 

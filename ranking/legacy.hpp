@@ -21,7 +21,8 @@ class Legacy : public Ranker
   Legacy();
   void ranking(JsonRequest&, JsonReply&) override;
  private:
-  float score_func(JsonRequest::CarsType& cars);
+  float score_func(const CarInfo& ,
+                   const LegacyAlgo::Weights&);
  private:
   LegacyAlgo algo_;
   LegacyDb db_;
