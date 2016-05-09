@@ -52,7 +52,7 @@ JsonParser::parse_request(const std::string& json_string,
   constexpr size_t limit = 500;
   for (SizeType i=0; i < car_ids.Size(); i++) {
     float distance = (itr1 != doc_.MemberEnd()) ? static_cast<float>(itr1->value[i].GetDouble()) : 0;
-    float price = (itr2 != doc_.MemberEnd()) ? static_cast<float>(itr2->value[i].GetDouble()) : 0;
+    int price = (itr2 != doc_.MemberEnd()) ? itr2->value[i].GetInt() : 0;
     int car_id = car_ids[i].GetInt();
     cars.emplace_back(car_id, distance, price);
   }

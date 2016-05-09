@@ -24,6 +24,7 @@ RankSvr::legacy_handler(const http::server::request& req, http::server::reply& r
 {
   ranking::JsonRequest jreq;
   ranking::JsonReply jrep;
+  // TODO cache req signature, if the same signature, return cached reply
   VLOG(100) << "request content " << req.content;
   int ret = parser_.parse_request(req.content, jreq);
   if (!ret) {

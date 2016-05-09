@@ -41,14 +41,20 @@ Legacy::score_func(const CarInfo& ci, const LegacyAlgo::Weights& ws)
   std::tie(d1, d2, d3) = ci.trans_distance();
 
   float w_quality    = ws.get_weight("quality");
-  float w_preference = ws.get_weight("preference");
   float w_distance1  = ws.get_weight("distance1");
   float w_distance2  = ws.get_weight("distance2");
   float w_distance3  = ws.get_weight("distance3");
 
+  float w_preference = ws.get_weight("preference");
+  float w_collected  = ws.get_weight("collected");
+  float w_ordered    = ws.get_weight("ordered");
+  float w_model      = ws.get_weight("prefer_model");
+  float w_price      = ws.get_weight("prefer_price");
+
   float s;
 
-  s = w_quality * ci.quality + w_preference * ci.preference + \
-      w_distance1 * d1 + w_distance2 * d2 + w_distance3 * d3;
+  s = w_quality * ci.quality + w_distance1 * d1 + w_distance2 * d2 + w_distance3 * d3 + \
+      w_preference * (w_collected * ci.is_collected + w_ordered * ci.is_ordered + \
+              w_model * ci.is_model + w_price * ci.is_price);
   return s;
 }
