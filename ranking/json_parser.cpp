@@ -32,11 +32,19 @@ JsonParser::parse_request(const std::string& json_string,
   // algo
   Value::ConstMemberIterator aitr = doc_.FindMember("algo");
   if (aitr != doc_.MemberEnd()) {
+    if (!aitr->value.IsString()) {
+      VLOG(ERROR) << "algo is not a string";
+      return -1;
+    }
     json_request.algo = aitr->value.GetString();
   }
   // user_id
   Value::ConstMemberIterator uitr = doc_.FindMember("user_id");
   if (uitr != doc_.MemberEnd()) {
+    if (!uitr->value.IsInt()) {
+      VLOG(ERROR) << "user_id is not a integer";
+      return -1;
+    }
     json_request.user_id = uitr->value.GetInt();
   }
   // car_id list
