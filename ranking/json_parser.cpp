@@ -7,6 +7,8 @@
 // @created   2016-04-28 04:20:38
 //
 
+#include <stdexcept>
+
 #include <glog/logging.h>
 
 #include "rapidjson/document.h"
@@ -18,23 +20,21 @@
 using namespace rapidjson;
 using namespace ranking;
 
-int
+void
 JsonParser::parse_request(const std::string& json_string,
         JsonRequest& json_request)
 {
   doc_.Parse(json_string);
 
-  if (!doc_.HasMember("car_list")) {
-    VLOG(100) << "car_list is required, abort parser";
-    return -1;
+  if (!doc_.IsObject()) {
+    throw std::invalid_argument("post data is invalid, expected json string");
   }
 
   // algo
   Value::ConstMemberIterator aitr = doc_.FindMember("algo");
   if (aitr != doc_.MemberEnd()) {
     if (!aitr->value.IsString()) {
-      VLOG(ERROR) << "algo is not a string";
-      return -1;
+      throw std::invalid_argument("algo is not a string");
     }
     json_request.algo = aitr->value.GetString();
   }
@@ -42,29 +42,59 @@ JsonParser::parse_request(const std::string& json_string,
   Value::ConstMemberIterator uitr = doc_.FindMember("user_id");
   if (uitr != doc_.MemberEnd()) {
     if (!uitr->value.IsInt()) {
-      VLOG(ERROR) << "user_id is not a integer";
-      return -1;
+      throw std::invalid_argument("user_id is not a integer");
     }
     json_request.user_id = uitr->value.GetInt();
   }
   // car_id list
-  const Value& car_ids = doc_["car_list"];
-  if (car_ids.Size() == 0) {
-    VLOG(100) << "car_list is empty, abort parser";
-    return -1;
+  if (!doc_.HasMember("car_list")) {
+    throw std::invalid_argument("car_list is required");
   }
-  Value::ConstMemberIterator itr1 = doc_.FindMember("distance");
-  Value::ConstMemberIterator itr2 = doc_.FindMember("price");
+  const Value& car_ids = doc_["car_list"];
+  if (!car_ids.IsArray()) {
+    throw std::invalid_argument("car_list is wrong, expect array type");
+  }
+  size_t car_ids_len = car_ids.Size();
+  if (car_ids.Size() == 0) {
+    throw std::invalid_argument("car_list is empty");
+  }
+  Value::ConstMemberIterator disItr = doc_.FindMember("distance");
+  if (disItr != doc_.MemberEnd() && disItr->value.Size() != car_ids_len) {
+    throw std::invalid_argument("car_list and distance length are unmatch ");
+  }
+  Value::ConstMemberIterator priceItr = doc_.FindMember("price");
+  if (priceItr != doc_.MemberEnd() && priceItr->value.Size() != car_ids_len) {
+    throw std::invalid_argument("car_list and price length are unmatch ");
+  }
   auto& cars = json_request.cars;
   // TODO limit cars capacity
   constexpr size_t limit = 500;
   for (SizeType i=0; i < car_ids.Size(); i++) {
-    float distance = (itr1 != doc_.MemberEnd()) ? static_cast<float>(itr1->value[i].GetDouble()) : 0;
-    int price = (itr2 != doc_.MemberEnd()) ? itr2->value[i].GetInt() : 0;
-    int car_id = car_ids[i].GetInt();
+    int car_id = 0;
+    if (car_ids[i].IsInt()) {
+     car_id = car_ids[i].GetInt();
+    } else {
+      throw std::invalid_argument("car_id is invalid, expect integer type");
+    }
+
+    float distance = 0;
+    if (disItr != doc_.MemberEnd()) {
+      if (disItr->value[i].IsDouble()) {
+        distance = static_cast<float>(disItr->value[i].GetDouble());
+      } else {
+        throw std::invalid_argument("distance is invalid, expect float type");
+      }
+    }
+    float price = 0;
+    if (priceItr != doc_.MemberEnd()) {
+      if (priceItr->value[i].IsDouble()) {
+        distance = static_cast<float>(priceItr->value[i].GetDouble());
+      } else {
+        throw std::invalid_argument("price is invalid, expect float type");
+      }
+    }
     cars.emplace_back(car_id, distance, price);
   }
-  return 0;
 }
 
 int
