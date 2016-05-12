@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-03-02 14:50:09>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-12 17:51:38>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -301,6 +301,7 @@ class CarScore(object):
         sql = '''update car_rank_feats cr
             join car_freetime cf on cr.car_id=cf.car_id
             set cr.auto_accept=if(cf.auto_accept='YES',1,0),
+            cr.quick_accept=if(cf.quick_accept='YES',1,0),
             cr.available_days=if(cf.status=1,
                 length(replace(substring(cf.freetime,1,30),'0','')),
                 0)
@@ -415,6 +416,32 @@ class CarScore(object):
                     len(rows), updated_cnt)
         self.db.commit()
 
+    def update_sales(self):
+        db = self._get_db("slave")
+        sql = """select carid, favourable
+        from car_discount
+        where update_time> '{}'
+        """.format(self.update_time)
+        sql += self._and_cars('carid')
+        rows = db.exec_sql(sql)
+        updated_cnt = 0
+        for row in rows:
+            try:
+                data = {}
+                favo = json.loads(row['favourable'])
+                if "discount" in favo['sales']:
+                    data['discount'] = 1
+                if "vip" in favo['sales']:
+                    data['vip'] = 1
+                if "new_car_special" in favo['sales']:
+                    data['new'] = 1
+                updated_cnt += self._update(row['car_id'], data)
+            except:
+                logger.warn('invalid json from favourable')
+        logger.info('[sales] update %d sales discount cars, affected % rows',
+                    len(rows), updated_cnt)
+        self.db.commit()
+
     def _calc_score(self, row):
         scores = {}
         # price
@@ -518,146 +545,6 @@ class CarScore(object):
             rows['w_send'] += 0.5
         return rows
 
-    def _calc_score_old(self, row):
-        recommend_weight = 18
-        confirm_weight = 20
-        rented_weight = 8
-        review_weight = 18
-        price_weight = 15
-        newbie_weight = 18 * 2
-
-        scores = {}
-
-        recommend_level = row['recommend_level']
-        if recommend_level == 1:
-            scores['recommend'] = recommend_weight * 0.6
-        elif recommend_level == 2:
-            scores['recommend'] = recommend_weight
-        elif recommend_level == 11:
-            scores['recommend'] = recommend_weight * 2
-        elif recommend_level == -1:
-            scores['recommend'] = recommend_weight * (-2)
-
-        ppnum = row['recent_paid1']
-        pcnum = row['recent_completed1']
-        past_confirm_score = 0
-        mpnum = row['recent_paid']
-        mcnum = row['recent_completed1']
-        month_confirm_score = 0
-        wpnum = row['recent_paid2']
-        wcnum = row['recent_completed2']
-
-        if ppnum < 1:
-            past_confirm_score = 0
-        elif ppnum < 3:
-            past_confirm_score = (pcnum / ppnum) * 0.4 + (ppnum / 30) * 0.6
-        elif ppnum < 6:
-            past_confirm_score = (pcnum / ppnum) * 0.7 + (ppnum / 30) * 0.3
-        else:
-            past_confirm_score = (pcnum / ppnum) * 0.9 + (ppnum / 30) * 0.1
-        if mpnum < 1:
-            month_confirm_score = 0
-        elif mpnum < 3:
-            month_confirm_score = (mcnum / mpnum) * 0.4 + (mpnum / 15) * 0.6
-        elif mpnum < 5:
-            month_confirm_score = (mcnum / mpnum) * 0.7 + (mpnum / 15) * 0.3
-        else:
-            month_confirm_score = (mcnum / mpnum) * 0.9 + (mpnum / 15) * 0.1
-
-        reco_punish_weight = 1
-        past_reject_punish = 0
-        if recommend_level > 0:
-            reco_punish_weight = 0.6
-        if ppnum == 0:
-            past_reject_punish = 8
-        elif ppnum == 1 and pcnum == 0:
-            past_reject_punish = 10
-        elif ppnum == 2 and pcnum == 0:
-            past_reject_punish = 12
-        elif ppnum == 2 and pcnum == 1:
-            past_reject_punish = 4
-        elif ppnum > 2 and ppnum <= 4 and pcnum / ppnum < 0.6:
-            past_reject_punish = (0.6 - pcnum / ppnum) * 18
-        elif ppnum > 4 and pcnum / ppnum < 0.6 and pcnum / ppnum >= 0.5:
-            past_reject_punish = (0.6 - pcnum / ppnum) * 30
-        elif ppnum > 4 and pcnum / ppnum < 0.5 and pcnum / ppnum >= 0.35:
-            past_reject_punish = (0.6 - pcnum / ppnum) * 50 - 2
-        elif ppnum > 4 and pcnum / ppnum < 0.35:
-            past_reject_punish = (0.6 - pcnum / ppnum) * 80 - 9.5
-        past_reject_punish = round(past_reject_punish, 2)
-        week_reject_punish = 0
-        wrnum = wpnum - wcnum
-        if wrnum > 0:
-            week_reject_punish = 7 * wrnum - 4
-        scores['confirm'] = (past_confirm_score * 0.4 +
-                             month_confirm_score * 0.6) * confirm_weight - (
-            past_reject_punish +
-            week_reject_punish) * reco_punish_weight
-
-        # mth_time=row['month_rented_time']
-        # reco_rented_weight=1
-        # if recommend_level>0:
-        #     reco_rented_weight=2
-        # if mth_time<20:
-        #     scores['rented']=(20-mth_time)/20 *rented_weight *reco_rented_weight
-
-        pd = row['proportion'] * row['suggest_price']
-        sp = row['suggest_price']
-        if pd > 0 and sp > 0:
-            if sp - pd >= 0:
-                scores['price'] = round(
-                    (((sp - pd) / sp) * 0.5 + (min((sp - pd), 200) / 200) * 0.5) * price_weight, 2)
-            else:
-                scores['price'] = round(
-                    (((sp - pd) / sp) * 0.5 + (max((sp - pd), -200) / 200) * 0.5) * price_weight, 2)
-
-        days = 0
-        if row['verified_time']:
-            ddays = datetime.datetime.today() - row['verified_time']
-            days = ddays.days
-        if days < 30:
-            scores['newbie'] = newbie_weight
-
-        rp = row['review_car']
-        rc = row['review_cnt']
-        if rc < 1:
-            scores['review'] = 0
-        elif rc < 3:
-            scores['review'] = round(
-                (((rp - 4) / 4) * 0.4 + (rc / 30) * 0.6) * review_weight, 2)
-        elif rc < 5:
-            scores['review'] = round(
-                (((rp - 4) / 4) * 0.7 + (rc / 30) * 0.3) * review_weight, 2)
-        else:
-            scores['review'] = round(
-                (((rp - 4) / 4) * 0.9 + (rc / 30) * 0.1) * review_weight, 2)
-
-        scores['manual'] = row['manual_weight']
-        final_score = reduce(lambda x, y: x + y, scores.itervalues())
-
-        rows = {'final_score': final_score,
-                'car_id': row['car_id']}
-        return rows
-
-    def update_scores_old(self):
-        sql = '''select *
-            from car_rank_feats
-            where update_time>'{}'
-        '''.format(self.update_time)
-        sql += self._and_cars('car_id')
-        rows = self.db.exec_sql(sql)
-        for row in rows:
-            scores = self._calc_score_old(row)
-            logger.debug('[rank] score: %s', scores)
-            sql = '''update car_rank
-            set update_time=update_time, final_score={}
-            where car_id={}
-            '''.format(scores['final_score'], scores['car_id'])
-            self.throttling.check()
-            self.db.exec_sql(sql)
-        self.db.commit()
-        logger.info('[rank] updated %d car rank score old', written)
-
     def update_scores(self):
         sql = '''select *
             from car_rank_feats
@@ -745,6 +632,7 @@ def main():
             cs.update_collect()
             cs.update_orders()
             cs.update_accept()
+            cs.update_sales()
         elif args.action == 'run':
             cs.update_scores()
 
