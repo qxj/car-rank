@@ -24,8 +24,9 @@ update() {
     log "calculate car scores ..."
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py prepare --checkpoint checkpoint.prepare $TEST_CMD
-        ./car_score.py run --checkpoint checkpoint.run $TEST_CMD
+        ./rank_feats.py --checkpoint checkpoint.prepare $TEST_CMD
+        ./rank_users.py --checkpoint checkpoint.users $TEST_CMD
+        ./rank_score.py --checkpoint checkpoint.run $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
@@ -37,8 +38,9 @@ update_all() {
     before=$(echo 60*24*$days | bc -l) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py prepare --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
-        ./car_score.py run --throttling 500 --before $before  --checkpoint checkpoint.run $TEST_CMD
+        ./rank_feats.py --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
+        ./rank_users.py --throttling 500 --before $before  --checkpoint checkpoint.users $TEST_CMD
+        ./rank_score.py --throttling 500 --before $before  --checkpoint checkpoint.run $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
@@ -46,7 +48,7 @@ calc_scores() {
     before=$(echo 60*24*30*12 | bc -l) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py run --before $before --checkpoint checkpoint.run $TEST_CMD
+        ./rank_score.py --before $before --checkpoint checkpoint.run $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 

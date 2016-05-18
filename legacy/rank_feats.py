@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-12 17:51:38>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-18 11:28:32>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -12,104 +12,30 @@ http://wiki.dzuche.com/pages/viewpage.action?pageId=16319251
 
 from __future__ import division
 import argparse
-import cPickle
 import datetime
 import logging
-import pdb
 import sys
-import time
-
 sys.path.append('./pdlib/py')
-import mydb
 from log import init_log
+
+from interval_db import IntervalDb
 
 logger = None
 
 
-class CarScore(object):
+class RankFeats(IntervalDb):
 
     def __init__(self, before_mins=0, throttling_num=0,
                  checkpoint_file=None,
                  cars=[], is_test=False):
-        self.is_test = is_test
-        self.db = self._get_db('master')
-        # yesterday this time
-        self.update_time = self._update_time(checkpoint_file, before_mins)
-        logger.info('[init] update time: %s', self.update_time)
-        self.throttling = Throttling(throttling_num)
-        # checkpoint properties
-        self.current_time = datetime.datetime.now()
-        self.checkpoint_file = checkpoint_file
+        super(RankFeats, self).__init__(before_mins, checkpoint_file,
+                                        throttling_num, is_test)
         self.cars = cars
-
-    def _get_db(self, flag):
-        db_names = {'master': 'master',
-                    'score': 'master',
-                    'price': 'price',
-                    'slave': 'slave'}
-        if self.is_test:
-            db_names = {'master': 'test28',
-                        'score': 'test28',
-                        'price': 'test28',
-                        'slave': 'test28'}
-        return mydb.get_db(db_names[flag])
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.db.commit()
-        # sync checkpoint if everything ok
-        self.set_checkpoint()
-        logger.info('exit car score instance, and set checkpoint.')
-
-    def set_checkpoint(self):
-        try:
-            with open(self.checkpoint_file, 'w') as fp:
-                cPickle.dump(self.current_time, fp)
-        except:
-            logger.warn('failed to dump checkpoint file: %s',
-                        self.checkpoint_file)
-
-    def _update_time(self, checkpoint_file, before_minutes):
-        ts = None
-        if before_minutes > 0:
-            ts = datetime.datetime.today() - \
-                datetime.timedelta(minutes=before_minutes)
-        else:
-            try:
-                with open(checkpoint_file) as fp:
-                    ts = cPickle.load(fp)
-            except:
-                logger.warn('no checkpoint file is found: %s', checkpoint_file)
-            if not isinstance(ts, datetime.datetime):
-                ts = datetime.datetime.today() - datetime.timedelta(minutes=10)
-                logger.warn('no timestamp is specified, set to %s', ts)
-        return ts
 
     def _update(self, car_id, value_dict):
         # TODO anti snow
         self.throttling.check()
         return self.db.update('car_rank_feats', {'car_id': car_id}, value_dict)
-
-    def _write_score(self, value_dict, table_name='car_rank_score'):
-        self.throttling.check()
-        return self.db.insert(table_name, value_dict,
-                              on_duplicate_ignore=False)
-
-    def _write_scores(self, value_dict_list, table_name='car_rank_score'):
-        updated_cnt = 0
-        dlen = len(value_dict_list)
-        idx = 0
-        batch_num = 100
-        while idx < dlen:
-            if idx % batch_num == 0:
-                updated_cnt += self.db.insert_many(
-                    table_name, value_dict_list[idx:idx + batch_num],
-                    on_duplicate_ignore=False)
-            idx += 1
-        self.db.commit()
-        return updated_cnt
 
     def _and_cars(self, field):
         return ' and {} in ({})'.format(field, ','.join(self.cars)) if self.cars else ''
@@ -442,153 +368,26 @@ class CarScore(object):
                     len(rows), updated_cnt)
         self.db.commit()
 
-    def _calc_score(self, row):
-        scores = {}
-        # price
-        scores['w_price'] = 0
-        suggest_price = row['suggest_price']
-        proportion = row['proportion']
-
-        if suggest_price <= 200:
-            low = (30, -20)
-            lot = (0.8, 1.1, 1.3, 1.6)
-            if proportion < lot[0]:
-                scores['w_price'] = low[0]
-            elif lot[0] <= proportion <= lot[1]:
-                scores['w_price'] = low[0] * \
-                    (lot[1] - proportion) / (lot[1] - lot[0])
-            elif lot[1] < proportion < lot[2]:
-                scores['w_price'] = 0
-            elif lot[2] <= proportion <= lot[3]:
-                scores['w_price'] = low[1] * \
-                    (proportion - lot[2]) / (lot[3] - lot[2])
-            else:
-                scores['w_price'] = low[1]
-        else:
-            hiw = (30, -30)
-            hit = (0.7, 1.15, 1.25, 1.6)
-            if proportion < hit[0]:
-                scores['w_price'] = hiw[0]
-            elif hit[0] <= proportion <= hit[1]:
-                scores['w_price'] = hiw[0] * \
-                    (hit[1] - proportion) / (hit[1] - hit[0])
-            elif hit[1] < proportion < hit[2]:
-                scores['w_price'] = 0
-            elif hit[2] <= proportion <= hit[3]:
-                scores['w_price'] = hiw[1] * \
-                    (proportion - hit[2]) / (hit[3] - hit[2])
-            else:
-                scores['w_price'] = hiw[1]
-            scores['w_price'] += -5
-        # price tuning
-        tuning = 0.1 * row['price_tuning']
-        scores['w_price'] += tuning
-        # accept
-        if row['auto_accept']:
-            scores['w_accept'] = 15
-        else:
-            scores['w_accept'] = row['recent_accepted'] * 1.5
-            scores['w_accept'] -= row['recent_rejected'] * 1.5
-        # review
-        scores['w_review_owner'] = 0
-        scores['w_review_car'] = 0
-        review_owner = row['review_owner']
-        if review_owner > 0:
-            scores['w_review_owner'] = 8 * (review_owner - 3) / 2
-        review_car = row['review_car']
-        if review_car > 0:
-            scores['w_review_car'] = 7 * (review_car - 3) / 2
-        # recommend
-        recommend_level = row['recommend_level']
-        scores['w_recommend'] = 0
-        if recommend_level > 10:
-            scores['w_recommend'] = 15
-        elif recommend_level > 0:
-            scores['w_recommend'] = 7.5
-        elif recommend_level < 0:
-            scores['w_recommend'] = -20
-        # manual
-        scores['w_manual'] = row['manual_weight']
-        # punish
-        punish = 0
-        days = 0
-        if row['verified_time']:
-            ddays = datetime.datetime.today() - row['verified_time']
-            days = ddays.days
-        if days > 30:
-            if row['pic_num'] < 2:
-                punish += 10
-            if row['desc_len'] < 50:
-                punish += 10
-        if row['recent_cancelled_owner']:
-            punish += 20
-        # recent_paid = row['recent_paid']
-        # recent_cancelled_renter = row['recent_cancelled_renter']
-        # if recent_paid > 0 and recent_cancelled_renter / recent_paid > 0.3:
-        #     punish += 20
-        scores['w_punish'] = -punish
-        # calc car score
-        car_score = reduce(lambda x, y: x + y, scores.itervalues())
-        # generate mysql row data
-        rows = {}
-        for k, v in scores.items():
-            rows[k] = round(v, 2)
-        rows['score'] = round(car_score, 2)
-        rows['car_id'] = row['car_id']
-        # distance
-        rows['w_send'] = 0
-        if row['owner_send'] and row['owner_send_desc_len'] > 15:
-            rows['w_send'] = 0.5
-        if row['owner_send_has_tags']:
-            rows['w_send'] += 1
-        if row['owner_send_distance'] >= 5:
-            rows['w_send'] += 0.5
-        return rows
-
-    def update_scores(self):
-        sql = '''select *
-            from car_rank_feats
-            where update_time>'{}'
-        '''.format(self.update_time)
-        sql += self._and_cars('car_id')
-        rows = self.db.exec_sql(sql)
-        scores_list = []
-        for row in rows:
-            scores = self._calc_score(row)
-            logger.debug('[rank] score: %s', scores)
-            scores_list.append(scores)
-        written = self._write_scores(scores_list)
-        logger.info('[rank] updated %d car rank score', written)
-
-
-class Throttling(object):
-
-    def __init__(self, limit_per_sec):
-        self.limit_per_sec = limit_per_sec
-        self.curr_ts = 0
-        self.cnt_this_sec = 0
-        self.yield_sec = 0.005  # sleep 5 ms
-
-    def check(self):
-        if self.limit_per_sec <= 0:
-            return
-        ts = int(time.time())
-        while ts == self.curr_ts and self.cnt_this_sec >= self.limit_per_sec:
-            time.sleep(self.yield_sec)
-            ts = int(time.time())
-        if ts == self.curr_ts:
-            self.cnt_this_sec += 1
-        else:
-            self.curr_ts = ts
-            self.cnt_this_sec = 0
+    def update(self):
+        self.sync_cars()
+        self.update_cars()
+        self.update_proportion()
+        self.update_price_tuning()
+        self.update_can_send()
+        self.update_review()
+        self.update_collect()
+        self.update_orders()
+        self.update_accept()
+        self.update_sales()
+        self.db.commit()
 
 
 def main():
     global logger
 
-    parser = argparse.ArgumentParser(description='prepare & calc car_score')
-    parser.add_argument('action', type=str, choices=('run', 'prepare',
-                                                     'test'), help='actions')
+    parser = argparse.ArgumentParser(description='collect rank features')
+    # parser.add_argument('action', type=str, choices=('run', 'prepare',
+    #                                                  'test'), help='actions')
     parser.add_argument('--throttling', type=int, default=200,
                         help='throttling update num per second')
     parser.add_argument('--checkpoint', type=str,
@@ -607,34 +406,22 @@ def main():
     if args.verbose:
         log_level = logging.DEBUG
         logtostderr = True
-    logger = init_log(logtofile='car_score.log', level=log_level,
+    logger = init_log(logtofile='rank_feats.log', level=log_level,
                       logtostderr=logtostderr)
 
     before_minutes = args.before
-
-    logger.info('[start] car_score args: %s', args)
 
     cars = []
     if args.cars:
         cars = args.cars.strip().split(',')
 
-    with CarScore(before_mins=before_minutes,
-                  throttling_num=args.throttling,
-                  checkpoint_file=args.checkpoint,
-                  cars=cars, is_test=args.test) as cs:
-        if args.action == 'prepare':
-            cs.sync_cars()
-            cs.update_cars()
-            cs.update_proportion()
-            cs.update_price_tuning()
-            cs.update_can_send()
-            cs.update_review()
-            cs.update_collect()
-            cs.update_orders()
-            cs.update_accept()
-            cs.update_sales()
-        elif args.action == 'run':
-            cs.update_scores()
+    logger.info('[start] rank_feats args: %s', args)
+
+    with RankFeats(before_mins=before_minutes,
+                   throttling_num=args.throttling,
+                   checkpoint_file=args.checkpoint,
+                   cars=cars, is_test=args.test) as obj:
+        obj.update()
 
     logger.info('================')
 

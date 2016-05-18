@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_price.py  Time-stamp: <Julian Qian 2015-12-03 17:00:53>
-# Copyright 2015 Julian Qian
-# Author: Julian Qian <junist@gmail.com>
-# Version: $Id: car_price.py,v 0.1 2015-11-19 13:13:25 jqian Exp $
 #
-
+# Copyright (C) 2016 Julian Qian
+#
+# @file      rank_price.py
+# @author    Julian Qian <junist@gmail.com>
+# @created   2016-05-18 11:31:07
+#
 
 '''sync car price from price.stats_daily_price_snapshot
 run in midnight at crontab
@@ -23,18 +24,19 @@ from log import init_log
 logger = init_log('car_price.log')
 
 
-class CarPrice(object):
+class RankPrice(object):
+
     def __init__(self, is_test):
         self.is_test = is_test
 
     def _get_db(self, flag, is_test=False):
-        db_names = { 'master': 'master',
-                     'price': 'price',
-                     'slave': 'slave' }
+        db_names = {'master': 'master',
+                    'price': 'price',
+                    'slave': 'slave'}
         if self.is_test:
-            db_names = { 'master': 'test28',
-                         'price': 'test28',
-                         'slave': 'test28' }
+            db_names = {'master': 'test28',
+                        'price': 'test28',
+                        'slave': 'test28'}
         return mydb.get_db(db_names[flag])
 
     def sync(self, batch_num=100):
@@ -90,10 +92,11 @@ class CarPrice(object):
 
 def main():
     parser = argparse.ArgumentParser(description='sync price tables')
-    parser.add_argument('--test', action='store_true', help='deploy on test environment')
+    parser.add_argument('--test', action='store_true',
+                        help='deploy on test environment')
     args = parser.parse_args()
 
-    cp = CarPrice(args.test)
+    cp = RankPrice(args.test)
     cp.sync()
     cp.update_price_all()
 
