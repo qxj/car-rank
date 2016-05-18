@@ -11,23 +11,18 @@
 from __future__ import division
 import argparse
 import datetime
-import logging
-import sys
-sys.path.append('./pdlib/py')
 from log import init_log
+from interval_db import IntervalDb
 
 logger = init_log(logtofile='rank_score.log')
-
-from interval_db import IntervalDb
 
 
 class RankScore(IntervalDb):
 
     def __init__(self, before_mins=0, throttling_num=0,
-                 checkpoint_file=None,
-                 cars=[], is_test=False):
+                 checkpoint_file=None, cars=[], env_flag=None):
         super(RankScore, self).__init__(before_mins, checkpoint_file,
-                                        throttling_num, is_test)
+                                        throttling_num, env_flag)
         self.cars = cars
 
     def _and_cars(self, field):
@@ -155,7 +150,7 @@ class RankScore(IntervalDb):
             rows['w_send'] += 0.5
         return rows
 
-    def update_scores(self):
+    def update(self):
         sql = '''select *
             from car_rank_feats
             where update_time>'{}'
@@ -183,7 +178,7 @@ def main():
                         help='before minutes to update, OVERRIDE checkpoint')
     parser.add_argument('--cars', type=str,
                         help='test car ids, splited by comma')
-    parser.add_argument('--test', action='store_true',
+    parser.add_argument('--env', type=str,
                         help='deploy on test environment')
     parser.add_argument('--verbose', action='store_true', help='verbose log')
     args = parser.parse_args()
@@ -199,7 +194,7 @@ def main():
     with RankScore(before_mins=before_minutes,
                    throttling_num=args.throttling,
                    checkpoint_file=args.checkpoint,
-                   cars=cars, is_test=args.test) as obj:
+                   cars=cars, env_flag=args.env) as obj:
         obj.update()
 
     logger.info('================')

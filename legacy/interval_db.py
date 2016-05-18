@@ -45,15 +45,15 @@ class Throttling(object):
 class IntervalDb(object):
 
     def __init__(self, before_mins=0, checkpoint_file=None,
-                 throttling_num=0, is_test=False):
+                 throttling_num=0, env_flag=None, db_flag="master"):
         """before_mins(>0) will override checkpoint_file
         """
         # checkpoint properties
         self._current_time = datetime.datetime.now()
         self._checkpoint_file = checkpoint_file
 
-        self.is_test = is_test
-        self.db = self._get_db('master')
+        self.env_flag = env_flag
+        self.db = self._get_db(db_flag)
         # yesterday this time
         self.update_time = self._update_time(before_mins)
         self.throttling = Throttling(throttling_num)
@@ -64,11 +64,16 @@ class IntervalDb(object):
                     'score': 'master',
                     'price': 'price',
                     'slave': 'slave'}
-        if self.is_test:
+        if self.env_flag == "test28":
             db_names = {'master': 'test28',
                         'score': 'test28',
-                        'price': 'test28',
+                        'price': 'test28_price',
                         'slave': 'test28'}
+        elif self.env_flag == "test38":
+            db_names = {'master': 'test38',
+                        'score': 'test38',
+                        'price': 'test38_price',
+                        'slave': 'test38'}
         return mydb.get_db(db_names[flag])
 
     def __enter__(self):

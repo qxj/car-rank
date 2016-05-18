@@ -17,7 +17,7 @@ import logging
 import MySQLdb as mdb
 from MySQLdb import converters
 
-from log import init_log
+from log import init_log, error_info
 
 
 def db_conf(db_flag, user_flag=None):
@@ -37,32 +37,43 @@ def db_conf(db_flag, user_flag=None):
     conf = {
         'host': 'localhost',
         'port': 3306,
-        'db_name': 'icars_zh',
+        'dbname': 'icars_zh',
         'user': 'production',
         'password': 'BEEQXXTGICARSCLU',
         'socket': None
     }
 
     if db_flag == 'testj':
-        conf['db_name'] = 'icars_jqian'
+        conf['dbname'] = 'icars_jqian'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'test28':
         conf['host'] = '192.168.1.28'
-        conf['db_name'] = 'icars_staging'
+        conf['dbname'] = 'icars_staging'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'test38':
         conf['host'] = '192.168.1.38'
-        conf['db_name'] = 'icars_sx'
+        conf['dbname'] = 'icars_sx'
+        conf['socket'] = '/home/work/log/mysql/mysql.sock'
+    elif db_flag == 'test28_price':
+        conf['host'] = '192.168.1.28'
+        conf['dbname'] = 'price'
+        conf['socket'] = '/home/work/log/mysql/mysql.sock'
+    elif db_flag == 'test38_price':
+        conf['host'] = '192.168.1.38'
+        conf['dbname'] = 'price'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'master':
         conf['host'] = '10.45.232.207'
+        conf['dbname'] = 'icars_zh'
     elif db_flag == 'slave':
         conf['host'] = '10.45.237.101'
+        conf['dbname'] = 'icars_zh'
     elif db_flag == 'score':
         conf['host'] = '10.45.232.207'
     elif db_flag == 'price':
         conf['host'] = '10.45.237.101'
         conf['port'] = 3307
+        conf['dbname'] = 'price'
 
     return conf
 
@@ -92,14 +103,15 @@ def dict_value_pad(key):
 
 
 def db_error_log(sql, param=None, debug=False):
+    msg = error_info()
     if param is None:
-        error_msg = 'sql: %s\n%s\n' % (sql, 30 * '~')
+        error_msg = '%s\nsql: %s\n%s\n' % (msg, sql, 30 * '~')
     else:
         dt = param
         if len(param) > 1 and not isinstance(param, dict) and (
                 isinstance(param[0], list) or isinstance(param[0], tuple)):
             dt = param[0]
-        error_msg = 'sql: %s\nparam:%s\n%s\n' % (sql, dt, 30 * '~')
+        error_msg = '%s\nsql: %s\nparam:%s\n%s\n' % (msg, sql, dt, 30 * '~')
     error_log.error(error_msg)
     if debug:
         raise Exception(error_msg)
@@ -508,11 +520,11 @@ def get_db(db_flag='slave', dbname=None, host='', conv=False, writable=True,
 
     print >> sys.stderr, "dbhost:", dc['host']
     log.debug('dbhost: %s' % dc['host'])
-    db_name = dc['db_name'] if not dbname else dbname
+    dbname = dc['dbname'] if not dbname else dbname
     port = dc.get('port', 3306)
     db_host = dc.get('host', host)
 
-    return mydb(db_host, dc['user'], dc['password'], db_name, port=port,
+    return mydb(db_host, dc['user'], dc['password'], dbname, port=port,
                 db_flag=db_flag, conv=conv, unix_socket=dc['socket'],
                 use_unicode=use_unicode)
 

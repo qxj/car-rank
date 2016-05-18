@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-18 11:28:32>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-18 17:33:13>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -13,11 +13,9 @@ http://wiki.dzuche.com/pages/viewpage.action?pageId=16319251
 from __future__ import division
 import argparse
 import datetime
+import json
 import logging
-import sys
-sys.path.append('./pdlib/py')
 from log import init_log
-
 from interval_db import IntervalDb
 
 logger = None
@@ -26,10 +24,9 @@ logger = None
 class RankFeats(IntervalDb):
 
     def __init__(self, before_mins=0, throttling_num=0,
-                 checkpoint_file=None,
-                 cars=[], is_test=False):
+                 checkpoint_file=None, cars=[], env_flag=None):
         super(RankFeats, self).__init__(before_mins, checkpoint_file,
-                                        throttling_num, is_test)
+                                        throttling_num, env_flag)
         self.cars = cars
 
     def _update(self, car_id, value_dict):
@@ -344,7 +341,7 @@ class RankFeats(IntervalDb):
 
     def update_sales(self):
         db = self._get_db("slave")
-        sql = """select carid, favourable
+        sql = """select carid car_id, favourable
         from car_discount
         where update_time> '{}'
         """.format(self.update_time)
@@ -352,19 +349,22 @@ class RankFeats(IntervalDb):
         rows = db.exec_sql(sql)
         updated_cnt = 0
         for row in rows:
+            data = {}
             try:
-                data = {}
                 favo = json.loads(row['favourable'])
                 if "discount" in favo['sales']:
-                    data['discount'] = 1
+                    data['sales_discount'] = 1
                 if "vip" in favo['sales']:
-                    data['vip'] = 1
+                    data['sales_vip'] = 1
                 if "new_car_special" in favo['sales']:
-                    data['new'] = 1
-                updated_cnt += self._update(row['car_id'], data)
+                    data['sales_new'] = 1
             except:
-                logger.warn('invalid json from favourable')
-        logger.info('[sales] update %d sales discount cars, affected % rows',
+                logger.warn('invalid json from favourable: %s',
+                            row['favourable'])
+            if data:
+                updated_cnt += self._update(row['car_id'], data)
+
+        logger.info('[sales] update %d sales discount cars, affected %d rows',
                     len(rows), updated_cnt)
         self.db.commit()
 
@@ -396,7 +396,7 @@ def main():
                         help='before minutes to update, OVERRIDE checkpoint')
     parser.add_argument('--cars', type=str,
                         help='test car ids, splited by comma')
-    parser.add_argument('--test', action='store_true',
+    parser.add_argument('--env', type=str,
                         help='deploy on test environment')
     parser.add_argument('--verbose', action='store_true', help='verbose log')
     args = parser.parse_args()
@@ -420,7 +420,7 @@ def main():
     with RankFeats(before_mins=before_minutes,
                    throttling_num=args.throttling,
                    checkpoint_file=args.checkpoint,
-                   cars=cars, is_test=args.test) as obj:
+                   cars=cars, env_flag=args.env) as obj:
         obj.update()
 
     logger.info('================')

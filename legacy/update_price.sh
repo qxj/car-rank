@@ -1,8 +1,8 @@
 #!/bin/bash
 
 TEST_CMD=''
-if [[ -n $IS_TEST_ENV ]]; then
-    TEST_CMD=' --test '
+if [[ -n $ENV_FLAG ]]; then
+    TEST_CMD=' --env '$ENV_FLAG
     echo "[1;31m====NOTE: WE ARE IN A TEST ENVIRONMENT====[0m"
 fi
 
