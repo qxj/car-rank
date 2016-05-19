@@ -20,15 +20,20 @@ struct CarInfo
 {
   int car_id;
   float distance;
-  float price;
+  int price;
 
   // to be fetched from db
-  float quality;    // car quality score
-  float preference; // user preference score
+  // 1) car quality score
+  float quality;
+  // 2) user preference
+  char is_ordered   : 1;
+  char is_collected : 1;
+  char is_model     : 1;
+  char is_price     : 1;
 
   CarInfo(int car_id, float distance=0, float price=0)
       : car_id(car_id) , distance(distance), price(price),
-        quality(0), preference(0)
+        quality(0)
   {}
 
   std::tuple<float, float, float> trans_distance() const {

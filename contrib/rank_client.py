@@ -29,21 +29,9 @@ def main():
 
     data = {
         "algo": "legacy",
-        "car_list": [
-            10003,
-            10002,
-            10004
-        ],
-        "distance": [
-            0.3,
-            0.1,
-            0.5
-        ],
-        "price": [
-            100,
-            250,
-            200
-        ],
+        "car_list": range(1000),
+        "distance": [i / 1000.0 for i in range(1000)],
+        "price": [i / 100.0 for i in range(1000)],
         "user_id": 142317
     }
 

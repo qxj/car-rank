@@ -11,7 +11,10 @@
 #include <exception>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 #include <boost/algorithm/string.hpp>
 
@@ -93,29 +96,68 @@ LegacyDb::fetch_scores(JsonRequest& req)
     }
 
     // TODO cache collected_cars for users
-    std::unordered_map<int, float> prefs;
+    std::unordered_set<int> collected_cars;
+    std::unordered_set<int> ordered_cars;
+    std::unordered_set<int> prefer_models;
+    std::pair<int, int> prefer_price{0, 0};
     // car_rank_users
     {
-      std::string sql{"select car_id, preference from car_rank_users where expired=0 and user_id="};
+      std::string sql{"select collected_cars, ordered_cars, prefer_models, prefer_price from car_rank_users where user_id="};
       sql.append(std::to_string(req.user_id));
-      sql.append(" and car_id in (");
-      sql.append(cars_sql);
-      sql.append(") limit 200");
 
       VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      while (res->next()) {
-        int car_id = res->getInt("car_id");
-        float pref = static_cast<float>(res->getDouble("preference"));
-        prefs[car_id] = pref;
+      if (res->next()) {
+        using namespace boost::algorithm;
+        {
+          std::string str{std::move(res->getString("collected_cars"))};
+          std::string word;
+
+          for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
+               it != decltype(it)(); ++it) {
+            word = std::move(boost::copy_range<std::string>(*it));
+            collected_cars.insert(std::stoi(word));
+          }
+        }
+        {
+          std::string str{res->getString("ordered_cars")};
+          std::string word;
+
+          for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
+               it != decltype(it)(); ++it) {
+            word = std::move(boost::copy_range<std::string>(*it));
+            ordered_cars.insert(std::stoi(word));
+          }
+        }
+        {
+          std::string str{res->getString("prefer_models")};
+          std::string word;
+
+          for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
+               it != decltype(it)(); ++it) {
+            word = std::move(boost::copy_range<std::string>(*it));
+            prefer_models.insert(std::stoi(word));
+          }
+        }
+        {
+          std::string str{res->getString("prefer_price")};
+          size_t pos = str.find(',');
+          if (pos != std::string::npos) {
+            try {
+              prefer_price.first = std::stoi(str.substr(0, pos));
+              prefer_price.second = std::stoi(str.substr(pos+1));
+            } catch (const std::out_of_range& e) {
+              LOG(ERROR) << "failed to parse prefer_price " << str;
+            }
+          }
+        }
       }
-      VLOG(100) << "loaded " << res->rowsCount() << " user preferences";
     }
 
     // car_rank_legecy
     {
-      std::string sql{"select car_id, quality from car_rank_legacy where car_id in ("};
+      std::string sql{"select car_id, quality, price, model from car_rank_legacy where car_id in ("};
       std::for_each(cars.begin(), cars.end(),
               [&sql](CarInfo& c)
               {
@@ -127,20 +169,48 @@ LegacyDb::fetch_scores(JsonRequest& req)
       VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      std::unordered_map<int, float> qualities;
+      std::unordered_map<int, std::tuple<float, int, int>> fetched_cars;
       while (res->next()) {
         int car_id = res->getInt("car_id");
-        float score = static_cast<float>(res->getDouble("quality"));
-        qualities[car_id] = score;
+        float quality = static_cast<float>(res->getDouble("quality"));
+        int price = res->getInt("price");
+        int model = res->getInt("model");
+        fetched_cars[car_id] = std::make_tuple(quality, model, price);
       }
 
       VLOG(100) << "loaded " << res->rowsCount() << " car quality scores";
 
       for (auto& car: cars) {
-        car.quality = qualities[car.car_id];
-        auto itr = prefs.find(car.car_id);
-        if (itr != prefs.end()) {
-          car.preference = itr->second;
+        float quality;
+        int model, price;
+        std::tie(quality, model, price) = fetched_cars[car.car_id];
+        car.quality = quality;
+        {
+          auto itr = collected_cars.find(car.car_id);
+          if (itr != collected_cars.end()) {
+            car.is_collected = 1;
+          }
+        }
+        {
+          auto itr = ordered_cars.find(car.car_id);
+          if (itr != ordered_cars.end()) {
+            car.is_ordered = 1;
+          }
+        }
+        {
+          auto itr = prefer_models.find(model);
+          if (itr != prefer_models.end()) {
+            car.is_model = 1;
+          }
+        }
+        {
+          if (car.price) {  // request will override db
+            price = car.price;
+          }
+          if (price >= prefer_price.first &&
+              price <= prefer_price.second) {
+            car.is_price = 1;
+          }
         }
       }
     }

@@ -24,15 +24,20 @@ RankSvr::legacy_handler(const http::server::request& req, http::server::reply& r
 {
   ranking::JsonRequest jreq;
   ranking::JsonReply jrep;
+  // TODO cache req signature, if the same signature, return cached reply
   VLOG(100) << "request content " << req.content;
-  int ret = parser_.parse_request(req.content, jreq);
-  if (!ret) {
+  try {
+    parser_.parse_request(req.content, jreq);
     if (FLAGS_dry) {
       jrep.from_request(jreq);
     } else {
       legacy_.ranking(jreq, jrep);
     }
+  } catch (const std::invalid_argument& e) {
+    jrep.ret = -1;
+    jrep.err_msg = e.what();
   }
+
   // TODO error handling
   parser_.reply_string(jrep, rep.content);
   VLOG(100) << "reply content " << rep.content;
