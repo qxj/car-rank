@@ -77,14 +77,21 @@ void connection::do_write()
 {
   auto self(shared_from_this());
   boost::asio::async_write(socket_, reply_.to_buffers(),
-      [this, self](boost::system::error_code ec, std::size_t)
+      [this, self](boost::system::error_code ec, std::size_t bytes_transferred)
       {
+        // TODO shutdown socket after written done
+        // size_t buf_len = boost::asio::buffer_size(reply_.to_buffers())
+        // bool transfer_done = bytes_transferred ==
         if (!ec)
+        {
+          LOG(ERROR) << "async_write failed: " << ec.message();
+        }
+
         {
           // Initiate graceful connection closure.
           boost::system::error_code ignored_ec;
           socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both,
-            ignored_ec);
+                  ignored_ec);
         }
 
         // if (ec != boost::asio::error::operation_aborted)
