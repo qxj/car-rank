@@ -36,7 +36,7 @@ update_all() {
     if [[ -z $days ]]; then
         days=365
     fi
-    before=$(echo 60*24*$days | bc -l) # before one year
+    before=$((60*24*$days)) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
         ./rank_feats.py --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
@@ -47,7 +47,7 @@ update_all() {
 }
 
 calc_scores() {
-    before=$(echo 60*24*30*12 | bc -l) # before one year
+    before=$((60*24*30*12)) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
         ./rank_score.py --before $before --checkpoint checkpoint.run $TEST_CMD
