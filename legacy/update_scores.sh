@@ -27,6 +27,7 @@ update() {
         ./rank_feats.py --checkpoint checkpoint.prepare $TEST_CMD
         ./rank_users.py --checkpoint checkpoint.users $TEST_CMD
         ./rank_score.py --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
@@ -41,6 +42,7 @@ update_all() {
         ./rank_feats.py --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
         ./rank_users.py --throttling 500 --before $before  --checkpoint checkpoint.users $TEST_CMD
         ./rank_score.py --throttling 500 --before $before  --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --throttling 500 --before $before  --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
@@ -49,6 +51,7 @@ calc_scores() {
     (
         flock -xn 200 || die "Another instance is running.."
         ./rank_score.py --before $before --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --before $before --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
