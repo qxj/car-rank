@@ -15,6 +15,7 @@
 #include <boost/noncopyable.hpp>
 
 #include <libmemcached/memcached.h>
+#include <libmemcachedutil-1.0/pool.h>
 
 class MemCache : private boost::noncopyable
 {
@@ -22,10 +23,11 @@ class MemCache : private boost::noncopyable
   explicit MemCache(const std::string&);
   ~MemCache();
 
-  std::string get(const std::string&);
-  void set(const std::string&, const std::string&);
+  std::string get(const std::string&) noexcept(false);
+  void set(const std::string&, const std::string&) noexcept(false);
  private:
   memcached_pool_st* pool_;
+  time_t expired_secs_;
 };
 
 #endif // MEM_CACHE_HPP_

@@ -337,7 +337,6 @@ endif(NOT MYSQLCONNECTORCPP_FOUND)
 
 ################################################################################
 # libmemcached - https://launchpad.net/libmemcached/+download
-https://launchpadlibrarian.net/165454254/libmemcached-1.0.18.tar.gz
 ################################################################################
 set(libmemcached_RELEASE 1.0.18)
 find_package(LibMemcached)
@@ -345,13 +344,25 @@ if(NOT LIBMEMCACHED_FOUND)
   message (STATUS " libmemcached has not been found.")
   message (STATUS " it will be downloaded and built automatically when doing 'make'.")
 
+  set(LIBMCD_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${libmemcached_RELEASE})
+  set(LIBMCD_SOURCE_DIR ${LIBMCD_PREFIX}/src/LibMemcached-${libmemcached_RELEASE})
+
+  set(LIBMCD_CONFIGURE ${LIBMCD_PREFIX}/configure_tmp)
+
+  file(WRITE ${LIBMCD_CONFIGURE}
+    "#!/bin/sh
+cd ${LIBMCD_SOURCE_DIR} && ./configure --disable-sasl
+# workaround in centos 6.5
+#cd ${LIBMCD_SOURCE_DIR} && automake --add-missing
+")
+
   ExternalProject_Add(
     LibMemcached-${libmemcached_RELEASE}
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${libmemcached_RELEASE}
+    PREFIX ${LIBMCD_PREFIX}
     URL https://launchpadlibrarian.net/165454254/libmemcached-${libmemcached_RELEASE}.tar.gz
     # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-    # BUILD_COMMAND make
+    CONFIGURE_COMMAND sh ${LIBMCD_CONFIGURE} --prefix=<INSTALL_DIR>
+    BUILD_COMMAND make
     INSTALL_COMMAND ""
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
@@ -380,6 +391,12 @@ if(NOT LIBMEMCACHED_FOUND)
   set_target_properties(libmemcached PROPERTIES
     IMPORTED_LOCATION ${LIBMEMCACHED_LIBRARY_PATH}/libmemcached.a)
   add_dependencies(libmemcached LibMemcached)
+
+  set(LIBMEMCACHEDUTIL_LIBRARIES libmemcachedutil)
+  add_library(libmemcachedutil UNKNOWN IMPORTED)
+  set_target_properties(libmemcachedutil PROPERTIES
+    IMPORTED_LOCATION ${LIBMEMCACHED_LIBRARY_PATH}/libmemcachedutil.a)
+  add_dependencies(libmemcachedutil LibMemcached)
 
   include_directories(${LIBMEMCACHED_INCLUDE_DIRS})
   link_directories(${LIBMEMCACHED_LIBRARY_PATH})
