@@ -9,7 +9,7 @@
 --dry=false
 --lock_file=/tmp/rank_svr.pid
 --thread_pool_size=4
---memcached_server="--SERVER=127.0.0.1:11211"
+--memcached_server=--SERVER=127.0.0.1:11211
 ### glog
 --logtostderr=false
 --log_dir=/var/tmp

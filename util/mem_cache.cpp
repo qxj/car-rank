@@ -12,6 +12,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <glog/logging.h>
+
 #include "mem_cache.hpp"
 
 MemCache::MemCache(const std::string& conf)
@@ -19,7 +21,7 @@ MemCache::MemCache(const std::string& conf)
 {
   pool_ = memcached_pool(conf.c_str(), conf.size());
   if (!pool_) {
-    // LOG(WARN) << "Failed to create memcached pool, conf: " << conf;
+    LOG(WARNING) << "Failed to create memcached pool, conf: " << conf;
   }
 }
 
@@ -50,6 +52,10 @@ MemCache::get(const std::string& key)
     std::string retval{value, valen};
     free(value);
     return retval;
+  } else if (rc == MEMCACHED_NOTFOUND) {
+    std::string msg{"Not found in memcached, key: "};
+    msg.append(key);
+    throw std::runtime_error(msg);
   } else {
     std::string msg{"Failed to get memcached, key: "};
     msg.append(key);

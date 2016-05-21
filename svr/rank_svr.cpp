@@ -34,7 +34,7 @@ RankSvr::legacy_handler(const http::server::request& req,
   try {
     cached_content = cache_.get(std::to_string(reqid));
   } catch(const std::runtime_error& e) {
-    LOG(WARNING) << "Failed to get cache, key: " << reqid;
+    LOG(WARNING) << e.what();
   } catch(const std::invalid_argument& e) {
     VLOG(100) << e.what();
   }
@@ -63,10 +63,13 @@ RankSvr::legacy_handler(const http::server::request& req,
     try {
       cache_.set(std::to_string(reqid), rep.content);
     } catch(const std::runtime_error& e) {
-      LOG(WARNING) << "Failed to set cache, key: " << reqid;
+      LOG(WARNING) << e.what();
     } catch(const std::invalid_argument& e) {
       VLOG(100) << e.what();
     }
+  } else {
+    rep.content.assign(cached_content);
+    VLOG(100) << "hit cache, key: " << reqid;
   }
 
   VLOG(100) << "reply content " << rep.content;
