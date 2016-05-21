@@ -7,8 +7,6 @@
 // @created   2016-05-20 18:13:01
 //
 
-#include <time.h>
-
 #include <stdexcept>
 #include <string>
 
@@ -16,8 +14,8 @@
 
 #include "mem_cache.hpp"
 
-MemCache::MemCache(const std::string& conf)
-    : pool_(nullptr), expired_secs_(600)
+MemCache::MemCache(const std::string& conf, time_t secs)
+    : pool_(nullptr), expired_secs_(secs)
 {
   pool_ = memcached_pool(conf.c_str(), conf.size());
   if (!pool_) {

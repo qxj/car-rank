@@ -10,6 +10,7 @@
 #ifndef MEM_CACHE_HPP_
 #define MEM_CACHE_HPP_
 
+#include <time.h>
 #include <string>
 
 #include <boost/noncopyable.hpp>
@@ -20,7 +21,7 @@
 class MemCache : private boost::noncopyable
 {
  public:
-  explicit MemCache(const std::string&);
+  explicit MemCache(const std::string&, time_t e = 600);
   ~MemCache();
 
   std::string get(const std::string&) noexcept(false);

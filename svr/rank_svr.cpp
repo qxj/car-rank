@@ -16,11 +16,12 @@
 
 DEFINE_int32(thread_pool_size, 4, "rank server thread pool size");
 DEFINE_string(memcached_server, "", "memcached server address list");
+DEFINE_int32(memcached_expired_secs, 600, "memcached expired seconds");
 DECLARE_bool(dry);
 
 RankSvr::RankSvr(const std::string& address, short port)
     : http::server::server(address, port, FLAGS_thread_pool_size),
-      cache_(FLAGS_memcached_server)
+      cache_(FLAGS_memcached_server, FLAGS_memcached_expired_secs)
 {}
 
 void
