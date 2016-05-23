@@ -79,7 +79,7 @@ JsonParser::parse_request(const std::string& json_string,
 
     float distance = 0;
     if (disItr != doc_.MemberEnd()) {
-      if (disItr->value[i].IsDouble()) {
+      if (disItr->value[i].IsNumber()) {
         distance = static_cast<float>(disItr->value[i].GetDouble());
       } else {
         throw std::invalid_argument("distance is invalid, expect float type");
@@ -87,7 +87,7 @@ JsonParser::parse_request(const std::string& json_string,
     }
     float price = 0;
     if (priceItr != doc_.MemberEnd()) {
-      if (priceItr->value[i].IsDouble()) {
+      if (priceItr->value[i].IsNumber()) {
         distance = static_cast<float>(priceItr->value[i].GetDouble());
       } else {
         throw std::invalid_argument("price is invalid, expect float type");

@@ -13,6 +13,7 @@
 #include "server.hpp"
 #include "legacy.hpp"
 #include "json_parser.hpp"
+#include "mem_cache.hpp"
 
 class RankSvr : public http::server::server
 {
@@ -22,6 +23,7 @@ class RankSvr : public http::server::server
  private:
   ranking::Legacy legacy_;
   ranking::JsonParser parser_;
+  MemCache cache_;
 };
 
 #endif // RANK_SVR_HPP_

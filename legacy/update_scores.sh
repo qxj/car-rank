@@ -14,8 +14,8 @@ die() {
 }
 
 TEST_CMD=''
-if [[ -n $IS_TEST_ENV ]]; then
-    TEST_CMD=' --test '
+if [[ -n $ENV_FLAG ]]; then
+    TEST_CMD=' --env '$ENV_FLAG
     echo "[1;31m====NOTE: WE ARE IN A TEST ENVIRONMENT====[0m"
 fi
 
@@ -24,8 +24,10 @@ update() {
     log "calculate car scores ..."
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py prepare --checkpoint checkpoint.prepare $TEST_CMD
-        ./car_score.py run --checkpoint checkpoint.run $TEST_CMD
+        ./rank_feats.py --checkpoint checkpoint.prepare $TEST_CMD
+        ./rank_users.py --checkpoint checkpoint.users $TEST_CMD
+        ./rank_score.py --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
@@ -34,19 +36,22 @@ update_all() {
     if [[ -z $days ]]; then
         days=365
     fi
-    before=$(echo 60*24*$days | bc -l) # before one year
+    before=$((60*24*$days)) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py prepare --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
-        ./car_score.py run --throttling 500 --before $before  --checkpoint checkpoint.run $TEST_CMD
+        ./rank_feats.py --throttling 500 --before $before  --checkpoint checkpoint.prepare $TEST_CMD
+        ./rank_users.py --throttling 500 --before $before  --checkpoint checkpoint.users $TEST_CMD
+        ./rank_score.py --throttling 500 --before $before  --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --throttling 500 --before $before  --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 
 calc_scores() {
-    before=$(echo 60*24*30*12 | bc -l) # before one year
+    before=$((60*24*30*12)) # before one year
     (
         flock -xn 200 || die "Another instance is running.."
-        ./car_score.py run --before $before --checkpoint checkpoint.run $TEST_CMD
+        ./rank_score.py --before $before --checkpoint checkpoint.run $TEST_CMD
+        ./rank_legacy.py --before $before --checkpoint checkpoint.legacy $TEST_CMD
     ) 200>/tmp/update_scores.lck
 }
 

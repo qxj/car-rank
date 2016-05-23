@@ -12,6 +12,7 @@ import argparse
 import httplib
 import urlparse
 import json
+from timeit import default_timer as timer
 
 
 def main():
@@ -40,12 +41,14 @@ def main():
     print uri.netloc, uri.path
     print request
 
+    start = timer()
     conn = httplib.HTTPConnection(uri.netloc)
     conn.request("POST", uri.path, request)
     response = conn.getresponse()
 
     print response.status, response.reason
     print response.read()
+    print timer() - start
 
     conn.close()
 

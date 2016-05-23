@@ -1,41 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_price.py  Time-stamp: <Julian Qian 2015-12-03 17:00:53>
-# Copyright 2015 Julian Qian
-# Author: Julian Qian <junist@gmail.com>
-# Version: $Id: car_price.py,v 0.1 2015-11-19 13:13:25 jqian Exp $
 #
-
+# Copyright (C) 2016 Julian Qian
+#
+# @file      rank_price.py
+# @author    Julian Qian <junist@gmail.com>
+# @created   2016-05-18 11:31:07
+#
 
 '''sync car price from price.stats_daily_price_snapshot
 run in midnight at crontab
 '''
 
 from __future__ import division
-import sys
 import datetime
 import argparse
 
-sys.path.append('./pdlib/py')
-import mydb
 from log import init_log
+from interval_db import IntervalDb
 
 logger = init_log('car_price.log')
 
 
-class CarPrice(object):
-    def __init__(self, is_test):
-        self.is_test = is_test
+class RankPrice(IntervalDb):
 
-    def _get_db(self, flag, is_test=False):
-        db_names = { 'master': 'master',
-                     'price': 'price',
-                     'slave': 'slave' }
-        if self.is_test:
-            db_names = { 'master': 'test28',
-                         'price': 'test28',
-                         'slave': 'test28' }
-        return mydb.get_db(db_names[flag])
+    def __init__(self, before_mins=0, throttling_num=0,
+                 checkpoint_file=None, env_flag=None):
+        super(RankPrice, self).__init__(before_mins, checkpoint_file,
+                                        throttling_num, env_flag, "price")
 
     def sync(self, batch_num=100):
         ds = datetime.date.today() - datetime.timedelta(1)
@@ -90,12 +82,13 @@ class CarPrice(object):
 
 def main():
     parser = argparse.ArgumentParser(description='sync price tables')
-    parser.add_argument('--test', action='store_true', help='deploy on test environment')
+    parser.add_argument('--env', type=str,
+                        help='deploy on test environment')
     args = parser.parse_args()
 
-    cp = CarPrice(args.test)
-    cp.sync()
-    cp.update_price_all()
+    with RankPrice(args.env) as obj:
+        obj.sync()
+        obj.update_price_all()
 
 if __name__ == "__main__":
     main()

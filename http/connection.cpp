@@ -65,6 +65,8 @@ void connection::do_read()
           {
             do_read();
           }
+        } else {
+          LOG(ERROR) << "failed to get request: " << ec.message();
         }
         // else if (ec != boost::asio::error::operation_aborted)
         // {
@@ -77,14 +79,17 @@ void connection::do_write()
 {
   auto self(shared_from_this());
   boost::asio::async_write(socket_, reply_.to_buffers(),
-      [this, self](boost::system::error_code ec, std::size_t)
+      [this, self](boost::system::error_code ec, std::size_t bytes_transferred)
       {
         if (!ec)
         {
+          VLOG(100) << "replied " << bytes_transferred << " bytes.";
           // Initiate graceful connection closure.
           boost::system::error_code ignored_ec;
           socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both,
-            ignored_ec);
+                  ignored_ec);
+        } else {
+          LOG(ERROR) << "async_write failed: " << ec.message();
         }
 
         // if (ec != boost::asio::error::operation_aborted)

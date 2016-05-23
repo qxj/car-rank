@@ -335,6 +335,77 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
 endif(NOT MYSQLCONNECTORCPP_FOUND)
 
 
+################################################################################
+# libmemcached - https://launchpad.net/libmemcached/+download
+################################################################################
+set(libmemcached_RELEASE 1.0.18)
+find_package(Memcached)
+if(NOT MEMCACHED_FOUND)
+  message (STATUS " libmemcached has not been found.")
+  message (STATUS " it will be downloaded and built automatically when doing 'make'.")
+
+  set(LIBMCD_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/memcached-${libmemcached_RELEASE})
+  set(LIBMCD_SOURCE_DIR ${LIBMCD_PREFIX}/src/Memcached-${libmemcached_RELEASE})
+  set(LIBMCD_BUILD_DIR ${LIBMCD_PREFIX}/src/Memcached-${libmemcached_RELEASE}-build)
+
+  set(LIBMCD_CONFIGURE ${LIBMCD_PREFIX}/configure_tmp)
+
+  file(WRITE ${LIBMCD_CONFIGURE}
+    "#!/bin/sh
+${LIBMCD_SOURCE_DIR}/configure --disable-sasl
+# workaround in centos 6.5
+#cd ${LIBMCD_SOURCE_DIR} && automake --add-missing
+# workaround for sasl
+cp ${LIBMCD_BUILD_DIR}/libmemcached-1.0/configure.h ${LIBMCD_SOURCE_DIR}/libmemcached-1.0/configure.h
+")
+
+  ExternalProject_Add(
+    Memcached-${libmemcached_RELEASE}
+    PREFIX ${LIBMCD_PREFIX}
+    URL https://launchpadlibrarian.net/165454254/libmemcached-${libmemcached_RELEASE}.tar.gz
+    # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    CONFIGURE_COMMAND sh ${LIBMCD_CONFIGURE} --prefix=<INSTALL_DIR>
+    BUILD_COMMAND make
+    INSTALL_COMMAND ""
+    # Wrap download, configure and build steps in a script to log output
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+    )
+
+  # Specify include dir
+  ExternalProject_Get_Property(Memcached-${libmemcached_RELEASE} source_dir)
+  ExternalProject_Get_Property(Memcached-${libmemcached_RELEASE} binary_dir)
+
+  set(MEMCACHED_INCLUDE_DIRS ${source_dir})
+  set(MEMCACHED_LIBRARY_PATH ${binary_dir}/libmemcached/.libs)
+
+  # ExternalProject_Add_Step(
+  #   Memcached-${libmemcached_RELEASE} workaround
+  #   COMMAND
+  #   cp ${source_dir}/driver/mysql_connection.h ${MEMCACHED_INCLUDE_DIRS}
+  #   && cp ${source_dir}/driver/mysql_driver.h ${MEMCACHED_INCLUDE_DIRS}
+  #   && cp ${source_dir}/driver/mysql_public_iface.h ${MEMCACHED_INCLUDE_DIRS}
+  #   DEPENDEES build
+  #   )
+
+  set(MEMCACHED_LIBRARIES libmemcached)
+  add_library(libmemcached UNKNOWN IMPORTED)
+  set_target_properties(libmemcached PROPERTIES
+    IMPORTED_LOCATION ${MEMCACHED_LIBRARY_PATH}/libmemcached.a)
+  add_dependencies(libmemcached Memcached)
+
+  set(MEMCACHEDUTIL_LIBRARIES libmemcachedutil)
+  add_library(libmemcachedutil UNKNOWN IMPORTED)
+  set_target_properties(libmemcachedutil PROPERTIES
+    IMPORTED_LOCATION ${MEMCACHED_LIBRARY_PATH}/libmemcachedutil.a)
+  add_dependencies(libmemcachedutil Memcached)
+
+  include_directories(${MEMCACHED_INCLUDE_DIRS})
+  link_directories(${MEMCACHED_LIBRARY_PATH})
+
+endif(NOT MEMCACHED_FOUND)
+
 add_subdirectory(svr)
 add_subdirectory(http)
 add_subdirectory(util)

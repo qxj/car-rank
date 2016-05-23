@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score_util.py  Time-stamp: <Julian Qian 2016-02-02 14:13:14>
-# Copyright 2016 Julian Qian
-# Author: Julian Qian <junist@gmail.com>
-# Version: $Id: car_score_util.py,v 0.1 2016-02-02 11:11:27 jqian Exp $
+#
+# Copyright (C) 2016 Julian Qian
+#
+# @file      score_util.py
+# @author    Julian Qian <junist@gmail.com>
+# @created   2016-05-18 11:29:50
 #
 
 import sys
@@ -13,7 +15,7 @@ sys.path.append('./pdlib/py')
 import mydb
 
 
-class CarScoreUtil(object):
+class ScoreUtil(object):
 
     def __init__(self):
         self.db = mydb.get_db("master")
@@ -44,7 +46,7 @@ def main():
     parser.add_argument('--weight', type=int, help='add weight')
     args = parser.parse_args()
 
-    util = CarScoreUtil()
+    util = ScoreUtil()
     cnt = 0
     for line in sys.stdin:
         cols = line.strip().split()
