@@ -346,14 +346,17 @@ if(NOT LIBMEMCACHED_FOUND)
 
   set(LIBMCD_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${libmemcached_RELEASE})
   set(LIBMCD_SOURCE_DIR ${LIBMCD_PREFIX}/src/LibMemcached-${libmemcached_RELEASE})
+  set(LIBMCD_BUILD_DIR ${LIBMCD_PREFIX}/src/LibMemcached-${libmemcached_RELEASE}-build)
 
   set(LIBMCD_CONFIGURE ${LIBMCD_PREFIX}/configure_tmp)
 
   file(WRITE ${LIBMCD_CONFIGURE}
     "#!/bin/sh
-cd ${LIBMCD_SOURCE_DIR} && ./configure --disable-sasl
+${LIBMCD_SOURCE_DIR}/configure --disable-sasl
 # workaround in centos 6.5
 #cd ${LIBMCD_SOURCE_DIR} && automake --add-missing
+# workaround for sasl
+cp ${LIBMCD_BUILD_DIR}/libmemcached-1.0/configure.h ${LIBMCD_SOURCE_DIR}/libmemcached-1.0/configure.h
 ")
 
   ExternalProject_Add(
