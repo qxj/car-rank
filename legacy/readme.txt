@@ -1,4 +1,4 @@
--*- markdown -*-
+<!-- -*- markdown -*- -->
 
 车辆质量分和相关排序因子的离线计算程序
 
@@ -18,6 +18,6 @@
 
 ### 测试环境
 
-对测试环境，可以定义一个环境变量 `IS_TEST_ENV`，然后类似这样执行脚本：
+对测试环境，可以定义一个环境变量 `ENV_FLAG`。比如，在38环境，可以运行如下脚本：
 
-    IS_TEST_ENV=1 ./update_scores.sh update
+    ENV_FLAG=test38 ./update_scores.sh update
