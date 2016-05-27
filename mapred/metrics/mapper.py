@@ -10,6 +10,7 @@
 
 import sys
 
+
 def main():
     for line in sys.stdin:
         cols = line.strip().split()
@@ -20,8 +21,12 @@ def main():
         page = int(cols[8])  # [1,\inf)
         algo = cols[9]
         visit_time = cols[10]
+        if page > 5:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Skip Trailing Pages,1\n")
+            continue
         # idx starts from zero
-        idx = (page -1) * 15 + pos
+        idx = (page - 1) * 15 + pos
         # only clicked items are required
         if label != "impress":
             # gain = 2^label -1
@@ -30,7 +35,8 @@ def main():
                 gain = 15
             elif label == "precheck":
                 gain = 7
-            print "%s:%.10d\t%d\t%s\t%s\t%s" % (qid, idx, gain, city_code, algo, visit_time)
+            print "%s:%.10d\t%d\t%s\t%s\t%s" % (
+                qid, idx, gain, city_code, algo, visit_time)
 
 if __name__ == "__main__":
     main()
