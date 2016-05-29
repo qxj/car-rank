@@ -11,24 +11,26 @@
 import sys
 import cmath
 
+
 def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
     for i, (idx, gain) in enumerate(rows):
         # P@k
-        patk = (i +1) / (idx +1)
+        patk = (i + 1) / (idx + 1)
         patks += patk
         # dcg(i) = gain_i / discount_i
-        d1 += gain/cmath.log(idx+2, 2).real
-    for i, (_, gain) in enumerate(sorted(rows,key=lambda x:x[1],reverse=True)):
+        d1 += gain / cmath.log(idx + 2, 2).real
+    for i, (_, gain) in enumerate(sorted(
+            rows, key=lambda x: x[1], reverse=True)):
         # idcg(i)
-        d2 += gain/cmath.log(i+2, 2).real
+        d2 += gain / cmath.log(i + 2, 2).real
     # AP = {\sum_k P@k \over relative docs }
     ap = patks / len(rows)
     ap_str = "%.5f" % ap
     # dcg = \sum_{i=1}^N dcg(i)
-    ndcg = d1/d2
+    ndcg = d1 / d2
     ndcg_str = "%.5f" % ndcg
     # OUTPUT: qid, ap, ndcg, city_code, algo, visit_time
     query.insert(1, ap_str)

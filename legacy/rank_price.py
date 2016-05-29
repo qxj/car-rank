@@ -29,16 +29,36 @@ class RankPrice(IntervalDb):
         super(RankPrice, self).__init__(before_mins, checkpoint_file,
                                         throttling_num, env_flag, "price")
 
-    def sync(self, batch_num=100):
+    def sync_proportion(self, batch_num=100):
         ds = datetime.date.today() - datetime.timedelta(1)
         sql = '''select car_id,
-        price,
         suggest_price,
         base_price,
         owner_proportion proportion
         from stats_daily_price_snapshot
         where date='{}'
         '''.format('%s' % ds)
+        db_price = self._get_db('price')
+        rows = db_price.exec_sql(sql)
+        db = self._get_db('master')
+        batch = []
+        updated_cnt = 0
+        for row in rows:
+            batch.append(row)
+            if len(batch) == batch_num:
+                updated_cnt += db.insert_many('car_rank_price', batch,
+                                              on_duplicate_ignore=False)
+                del batch[:]
+        if len(batch):
+            updated_cnt += db.insert_many('car_rank_price', batch,
+                                          on_duplicate_ignore=False)
+        logger.info('update %d car price', updated_cnt)
+
+    def sync_price(self, batch_num=100):
+        ds = datetime.date.today()
+        sql = '''select car_id, day1 price
+        from car_dprice_{}
+        '''.format(ds.strftime('%Y%m%d'))
         db_price = self._get_db('price')
         rows = db_price.exec_sql(sql)
         db = self._get_db('master')
@@ -87,7 +107,8 @@ def main():
     args = parser.parse_args()
 
     with RankPrice(args.env) as obj:
-        obj.sync()
+        obj.sync_price()
+        obj.sync_proportion()
         obj.update_price_all()
 
 if __name__ == "__main__":

@@ -82,8 +82,11 @@ class CarUsers(IntervalDb):
                 new_cars = ','.join([str(row['car_id']) for row in rows])
                 cntr['add'] += 1
             if new_cars:
+                logger.debug("insert new car_id %d, collected_cars %s",
+                             user_id, new_cars)
                 self._update(user_id, {'collected_cars': new_cars})
         logger.info('[collect] update %d, add %d', cntr['update'], cntr['add'])
+        self.db.commit()
 
     def update_orders(self):
         max_order_size = 50
@@ -127,8 +130,11 @@ class CarUsers(IntervalDb):
                 new_cars = ','.join([str(row['car_id']) for row in rows])
                 cntr['add'] += 1
             if new_cars:
+                logger.debug("insert new car_id %d, ordered_cars %s",
+                             user_id, new_cars)
                 self._update(user_id, {'ordered_cars': new_cars})
         logger.info('[orders] update %d, add %d', cntr['update'], cntr['add'])
+        self.db.commit()
 
     def update(self):
         self.update_collect()
