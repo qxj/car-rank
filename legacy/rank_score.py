@@ -33,20 +33,6 @@ class RankScore(IntervalDb):
         return self.db.insert(table_name, value_dict,
                               on_duplicate_ignore=False)
 
-    def _write_scores(self, value_dict_list, table_name='car_rank_score'):
-        updated_cnt = 0
-        dlen = len(value_dict_list)
-        idx = 0
-        batch_num = 100
-        while idx < dlen:
-            if idx % batch_num == 0:
-                updated_cnt += self.db.insert_many(
-                    table_name, value_dict_list[idx:idx + batch_num],
-                    on_duplicate_ignore=False)
-            idx += 1
-        self.db.commit()
-        return updated_cnt
-
     def _calc_score(self, row):
         scores = {}
         # price
@@ -157,12 +143,14 @@ class RankScore(IntervalDb):
         '''.format(self.update_time)
         sql += self._and_cars('car_id')
         rows = self.db.exec_sql(sql)
-        scores_list = []
+        written = 0
         for row in rows:
             scores = self._calc_score(row)
             logger.debug('[rank] score: %s', scores)
-            scores_list.append(scores)
-        written = self._write_scores(scores_list)
+            written += self._write_score(scores)
+            if written % 100 == 0:
+                self.db.commit()
+        self.db.commit()
         logger.info('[rank] updated %d car rank score', written)
 
 
