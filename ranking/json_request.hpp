@@ -10,6 +10,7 @@
 #ifndef JSON_REQUEST_HPP_
 #define JSON_REQUEST_HPP_
 
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -58,6 +59,14 @@ struct JsonRequest
   CarsType cars;
 
   JsonRequest() : algo("default") {}
+
+  std::string to_string() const {
+    std::ostringstream oss;
+    oss << "[JsonRequest] algo " << algo
+        << ", user_id " << user_id
+        << ", cars num " << cars.size();
+    return oss.str();
+  }
 };
 
 struct JsonReply

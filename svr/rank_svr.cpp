@@ -48,6 +48,9 @@ RankSvr::legacy_handler(const http::server::request& req,
     ranking::JsonReply jrep;
     try {
       parser_.parse_request(req.content, jreq);
+      LOG(INFO) << "json request algo " << jreq.algo
+                << ", user_id " << jreq.user_id
+                << ", totally " << jreq.cars.size() << " cars";
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
