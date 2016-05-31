@@ -55,21 +55,29 @@ JsonParser::parse_request(const std::string& json_string,
     throw std::invalid_argument("car_list is wrong, expect array type");
   }
   size_t car_ids_len = car_ids.Size();
-  if (car_ids.Size() == 0) {
+  if (car_ids_len == 0) {
     throw std::invalid_argument("car_list is empty");
   }
   Value::ConstMemberIterator disItr = doc_.FindMember("distance");
-  if (disItr != doc_.MemberEnd() && disItr->value.Size() != car_ids_len) {
-    throw std::invalid_argument("car_list and distance length are unmatch ");
+  if (disItr != doc_.MemberEnd()) {
+    if (!disItr->value.IsArray()) {
+      throw std::invalid_argument("distance should be array ");
+    } else if (disItr->value.Size() != car_ids_len) {
+      throw std::invalid_argument("car_list and distance length are unmatch ");
+    }
   }
   Value::ConstMemberIterator priceItr = doc_.FindMember("price");
-  if (priceItr != doc_.MemberEnd() && priceItr->value.Size() != car_ids_len) {
-    throw std::invalid_argument("car_list and price length are unmatch ");
+  if (priceItr != doc_.MemberEnd()) {
+    if (!priceItr->value.IsArray()) {
+      throw std::invalid_argument("price should be array ");
+    } else if (priceItr->value.Size() != car_ids_len) {
+      throw std::invalid_argument("car_list and price length are unmatch ");
+    }
   }
   auto& cars = json_request.cars;
   // TODO limit cars capacity
   constexpr size_t limit = 500;
-  for (SizeType i=0; i < car_ids.Size(); i++) {
+  for (SizeType i=0; i < car_ids_len; i++) {
     int car_id = 0;
     if (car_ids[i].IsInt()) {
      car_id = car_ids[i].GetInt();
