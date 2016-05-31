@@ -53,7 +53,7 @@ MemCache::get(const std::string& key)
   } else if (rc == MEMCACHED_NOTFOUND) {
     std::string msg{"Not found in memcached, key: "};
     msg.append(key);
-    throw std::runtime_error(msg);
+    throw std::invalid_argument(msg);
   } else {
     std::string msg{"Failed to get memcached, key: "};
     msg.append(key);

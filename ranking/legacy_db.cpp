@@ -120,7 +120,7 @@ LegacyDb::fetch_scores(JsonRequest& req)
             try {
               collected_cars.insert(std::stoi(word));
             } catch (const std::invalid_argument& e) {
-              LOG(ERROR) << "Invalid car_id: " << word;
+              VLOG(100) << "Invalid collected car_id: " << word;
             }
           }
         }
@@ -134,7 +134,7 @@ LegacyDb::fetch_scores(JsonRequest& req)
             try {
               ordered_cars.insert(std::stoi(word));
             } catch (const std::invalid_argument& e) {
-              LOG(ERROR) << "Invalid car_id: " << word;
+              VLOG(100) << "Invalid ordered car_id: " << word;
             }
           }
         }
@@ -148,7 +148,7 @@ LegacyDb::fetch_scores(JsonRequest& req)
             try {
               prefer_models.insert(std::stoi(word));
             } catch (const std::invalid_argument& e) {
-              LOG(ERROR) << "Invalid car_id: " << word;
+              VLOG(100) << "Invalid prefer model: " << word;
             }
           }
         }
@@ -162,7 +162,7 @@ LegacyDb::fetch_scores(JsonRequest& req)
             } catch (const std::out_of_range& e) {
               LOG(ERROR) << "failed to parse prefer_price " << str;
             } catch (const std::invalid_argument& e) {
-              LOG(ERROR) << "Invalid price range: " << str;
+              VLOG(100) << "Invalid price range: " << str;
             }
           }
         }

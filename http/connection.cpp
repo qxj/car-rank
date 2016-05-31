@@ -42,27 +42,21 @@ void connection::do_read()
   socket_.async_read_some(boost::asio::buffer(buffer_),
       [this, self](boost::system::error_code ec, std::size_t bytes_transferred)
       {
-        if (!ec)
-        {
+        if (!ec) {
           request_parser::result_type result;
           std::tie(result, std::ignore) = request_parser_.parse(
               request_, buffer_.data(), buffer_.data() + bytes_transferred);
 
-          VLOG(100) << "async read " << bytes_transferred << " bytes from " << socket_.remote_endpoint();
+          VLOG(50) << "async read " << bytes_transferred << " bytes from " << socket_.remote_endpoint();
 
-          if (result == request_parser::good)
-          {
+          if (result == request_parser::good) {
             request_handler_.handle_request(request_, reply_);
             do_write();
-          }
-          else if (result == request_parser::bad)
-          {
+          } else if (result == request_parser::bad) {
             LOG(ERROR) << "failed to parse request, from " << socket_.remote_endpoint();
             reply_ = reply::stock_reply(reply::bad_request);
             do_write();
-          }
-          else
-          {
+          } else {
             do_read();
           }
         } else {
@@ -81,8 +75,7 @@ void connection::do_write()
   boost::asio::async_write(socket_, reply_.to_buffers(),
       [this, self](boost::system::error_code ec, std::size_t bytes_transferred)
       {
-        if (!ec)
-        {
+        if (!ec) {
           VLOG(100) << "replied " << bytes_transferred << " bytes.";
           // Initiate graceful connection closure.
           boost::system::error_code ignored_ec;
