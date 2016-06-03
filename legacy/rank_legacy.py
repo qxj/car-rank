@@ -24,6 +24,7 @@ class RankLegacy(IntervalDb):
         super(RankLegacy, self).__init__(before_mins, checkpoint_file,
                                          throttling_num, env_flag)
         self.cars = cars
+        self.stats_file = "/tmp/rank_legacy.stats"
 
     def _and_cars(self, field):
         return ' and {} in ({})'.format(field, ','.join(self.cars)) \
@@ -138,6 +139,18 @@ class RankLegacy(IntervalDb):
         return rows
 
     def update(self):
+        sql = '''select avg(quality) quality_avg,
+        avg(quality*quality) - avg(quality)*avg(quality) quality_var
+        from car_rank_legacy
+        '''
+        row = self.db.exec_sql(sql)[0]
+        logger.info("based stats: %s", row)
+        qavg = row["quality_avg"]
+        qvar = row["quality_var"]
+
+        # NOTE for performace, avg and var are deflected a little from the true
+        # data
+
         sql = '''select *
             from car_rank_feats
             where update_time>'{}'
@@ -146,9 +159,11 @@ class RankLegacy(IntervalDb):
         rows = self.db.exec_sql(sql)
         written = 0
         for row in rows:
-            scores = self._calc_score(row)
-            logger.debug('[rank] score: %s', scores)
-            written += self._write_score(scores)
+            data = self._calc_score(row)
+            # z-score norm
+            data['quality_norm'] = (data['quality'] - qavg) / qvar
+            logger.debug('[rank] score: %s', data)
+            written += self._write_score(data)
             if written % 100 == 0:
                 self.db.commit()
         self.db.commit()
