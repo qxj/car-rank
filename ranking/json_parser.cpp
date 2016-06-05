@@ -31,22 +31,36 @@ JsonParser::parse_request(const std::string& json_string,
   }
 
   // algo
-  Value::ConstMemberIterator aitr = doc_.FindMember("algo");
-  if (aitr != doc_.MemberEnd()) {
-    if (!aitr->value.IsString()) {
-      throw std::invalid_argument("algo is not a string");
+  {
+    Value::ConstMemberIterator itr = doc_.FindMember("algo");
+    if (itr != doc_.MemberEnd()) {
+      if (!itr->value.IsString()) {
+        throw std::invalid_argument("algo is not a string");
+      }
+      json_request.algo = itr->value.GetString();
     }
-    json_request.algo = aitr->value.GetString();
   }
   // user_id
-  Value::ConstMemberIterator uitr = doc_.FindMember("user_id");
-  if (uitr != doc_.MemberEnd()) {
-    if (!uitr->value.IsInt()) {
-      throw std::invalid_argument("user_id is not a integer");
+  {
+    Value::ConstMemberIterator itr = doc_.FindMember("user_id");
+    if (itr != doc_.MemberEnd()) {
+      if (!itr->value.IsInt()) {
+        throw std::invalid_argument("user_id is not a integer");
+      }
+      json_request.user_id = itr->value.GetInt();
     }
-    json_request.user_id = uitr->value.GetInt();
   }
-  // car_id list
+  // debug
+  {
+    Value::ConstMemberIterator itr = doc_.FindMember("debug");
+    if (itr != doc_.MemberEnd()) {
+      if (!itr->value.IsBool()) {
+        throw std::invalid_argument("debug is not a bool");
+      }
+      json_request.debug = itr->value.GetBool();
+    }
+  }
+  // car_list is required
   if (!doc_.HasMember("car_list")) {
     throw std::invalid_argument("car_list is required");
   }
@@ -125,6 +139,16 @@ JsonParser::reply_string(const JsonReply& reply, std::string& json_string)
         car_list.PushBack(car_id, allocator);
       }
       o.AddMember("car_list", car_list, allocator);
+      // TODO for debug output
+      if (!reply.scores.empty()) {
+        Value score_list(kArrayType);
+        auto& scores = reply.scores;
+        for (auto& s: scores) {
+          Value score(s);
+          score_list.PushBack(score, allocator);
+        }
+        o.AddMember("score_list", score_list, allocator);
+      }
     }
   }
   StringBuffer buffer;

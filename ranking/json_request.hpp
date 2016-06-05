@@ -25,16 +25,18 @@ struct CarInfo
 
   // to be fetched from db
   // 1) car quality score
-  float quality;
+  float quality{0};
   // 2) user preference
   char is_ordered   : 1;
   char is_collected : 1;
   char is_model     : 1;
   char is_price     : 1;
 
+  float score{0};
+
   CarInfo(int car_id, float distance=0, float price=0)
       : car_id(car_id) , distance(distance), price(price),
-        quality(0)
+        is_ordered(0), is_collected(0), is_model(0), is_price(0)
   {}
 
   std::tuple<float, float, float> trans_distance() const {
@@ -54,6 +56,7 @@ struct JsonRequest
 {
   std::string algo;
   int user_id;
+  bool debug{false};
 
   typedef std::vector<CarInfo> CarsType;
   CarsType cars;
@@ -74,8 +77,11 @@ struct JsonReply
   int ret;
   std::string err_msg;
 
-  typedef std::vector<int> CarIdsType;
-  CarIdsType car_ids;
+  typedef std::vector<int> CarIds;
+  CarIds car_ids;
+
+  typedef std::vector<float> Scores;
+  Scores scores;
 
   JsonReply() : ret(0) {}
 
