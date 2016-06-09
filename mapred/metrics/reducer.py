@@ -12,10 +12,31 @@ import sys
 import cmath
 
 
+def label2gain(label):
+    # gain = 2^label -1
+    gain = 2
+    if label == 'precheck':
+        gain = 7
+    elif label == 'order':
+        gain = 15
+    return gain
+
+
+def gain2label(gain):
+    label = 'click'
+    if gain == 7:
+        label = 'precheck'
+    elif gain == 15:
+        label = 'order'
+    return label
+
+
 def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
+    row_max_gain = max(rows, key=lambda x: x[1])
+    label = gain2label(row_max_gain[1])
     for i, (idx, gain) in enumerate(rows):
         # P@k
         patk = (i + 1) / (idx + 1)
@@ -32,9 +53,10 @@ def process(rows, query):
     # dcg = \sum_{i=1}^N dcg(i)
     ndcg = d1 / d2
     ndcg_str = "%.5f" % ndcg
-    # OUTPUT: qid, ap, ndcg, city_code, algo, visit_time
-    query.insert(1, ap_str)
-    query.insert(2, ndcg_str)
+    # OUTPUT: qid, label, ap, ndcg, city_code, algo, visit_time
+    query.insert(1, label)
+    query.insert(2, ap_str)
+    query.insert(3, ndcg_str)
     print "\t".join(query)
     sys.stderr.write("reporter:counter:My Counters,Metrics Counter,1\n")
 
@@ -46,7 +68,8 @@ def main():
         cols = line.strip('\n').split()
         qid, idx_str = cols[0].split(':')
         idx = float(idx_str)
-        gain = float(cols[1])
+        label = cols[1]
+        gain = label2gain(label)
         query = [qid] + cols[2:]  # qid, city_code, algo, visit_time
         if not last_query:
             last_query = query

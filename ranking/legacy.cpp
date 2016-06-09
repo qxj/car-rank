@@ -60,6 +60,7 @@ class LegacyScore
 Legacy::Legacy()
     : algo_(), db_()
 {
+  // TODO fetch algos from db every some interval minutes
   db_.fetch_algos(algo_);
 }
 

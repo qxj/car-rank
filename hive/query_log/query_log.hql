@@ -78,7 +78,7 @@ SELECT
 CONCAT(user_id, '_', params['query_id'], '_', ppzc_decode(params['car_id'])) qcid
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/order\\.precheck'
+AND (uri RLIKE '/order\\.precheck' OR uri RLIKE '/order\\.submit_precheck')
 AND params['query_id'] IS NOT NULL
 AND params['car_id'] IS NOT NULL
 ) t_precheck ON t_precheck.qcid=t_exp.qcid
@@ -90,8 +90,9 @@ CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
 order_id
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/order\\.new'
+AND (uri RLIKE '/order\\.new' OR uri RLIKE '/order\\.create')
 AND params['query_id'] IS NOT NULL
+AND car_id IS NOT NULL
 ) t_order ON t_order.qcid=t_exp.qcid;
 
 

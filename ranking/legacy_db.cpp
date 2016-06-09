@@ -263,7 +263,7 @@ LegacyDb::fetch_algos(LegacyAlgo& algo)
         float weight = static_cast<float>(res->getDouble("weight"));
         algo.add_weight(algo_name, feat_name, weight);
 
-        VLOG(100) << "algo " << algo_name << ", feat " << feat_name
+        LOG(INFO) << "algo " << algo_name << ", feat " << feat_name
                   << ", weight " << weight;
       }
       LOG(INFO) << "loaded " << algo.size() << " algos, and "

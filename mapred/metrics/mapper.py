@@ -29,14 +29,17 @@ def main():
         idx = (page - 1) * 15 + pos
         # only clicked items are required
         if label != "impress":
-            # gain = 2^label -1
-            gain = 3
-            if label == "order":
-                gain = 15
-            elif label == "precheck":
-                gain = 7
-            print "%s:%.10d\t%d\t%s\t%s\t%s" % (
-                qid, idx, gain, city_code, algo, visit_time)
+            if label == 'click':
+                sys.stderr.write("reporter:counter:My Counters,CV-Click,1\n")
+            elif label == 'precheck':
+                sys.stderr.write(
+                    "reporter:counter:My Counters,CV-Precheck,1\n")
+            elif label == 'order':
+                sys.stderr.write("reporter:counter:My Counters,CV-Order,1\n")
+            else:
+                sys.stderr.write("reporter:counter:My Counters,CV-Unknown,1\n")
+            print "%s:%.10d\t%s\t%s\t%s\t%s" % (
+                qid, idx, label, city_code, algo, visit_time)
 
 if __name__ == "__main__":
     main()
