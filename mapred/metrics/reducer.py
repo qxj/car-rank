@@ -8,6 +8,7 @@
 # @created   2016-03-31 07:46:37
 #
 
+from __future__ import division
 import sys
 import cmath
 
