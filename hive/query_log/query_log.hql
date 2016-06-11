@@ -99,5 +99,5 @@ AND car_id IS NOT NULL
 ) t_order ON t_order.qcid=t_exp.qcid;
 
 
-ALTER TABLE query_log ADD IF NOT EXISTS PARTITION(ds=${hiveconf:datestr})
-LOCATION '/user/work/query_log/ds=${hiveconf:datestr}';
+ALTER TABLE rank.query_log ADD IF NOT EXISTS PARTITION(ds=${hiveconf:datestr})
+LOCATION '/user/work/rank/query_log/ds=${hiveconf:datestr}';
