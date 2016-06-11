@@ -36,6 +36,11 @@ def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
+    # skip, if more than 5 click per page
+    ctr = len(rows) / (rows[-1][0] + 1)
+    if ctr > 0.3:
+        sys.stderr.write("reporter:counter:My Counters,Skip CTR 0.3,1\n")
+        return
     row_max_gain = max(rows, key=lambda x: x[1])
     label = gain2label(row_max_gain[1])
     for i, (idx, gain) in enumerate(rows):

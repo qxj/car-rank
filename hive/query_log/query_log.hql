@@ -7,7 +7,7 @@ ADD JAR /home/work/udf.jar;
 -- NOTE: this hql will fail when process php_svr_log before 20151225, because
 -- distance is missing
 
-INSERT OVERWRITE TABLE query_log
+INSERT OVERWRITE TABLE rank.query_log
 PARTITION (ds=${hiveconf:datestr})
 SELECT
 DISTINCT
@@ -23,6 +23,7 @@ t_order.order_id,
 t_dis.distance,
 t_exp.pos,
 t_exp.page,
+t_exp.algo,
 t_exp.visit_time
 FROM
 (
@@ -32,6 +33,7 @@ user_id,
 city_code,
 params['page'] page,
 pos,
+IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
 visit_time,
 CONCAT(user_id, '_', params['query_id']) query_id,
 CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id,
@@ -43,7 +45,7 @@ WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.search'
 AND search IS NOT NULL
 AND user_id IS NOT NULL
-AND params['query_id'] IS NOT NULL
+AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 ) t_exp
 
 JOIN
@@ -57,7 +59,7 @@ WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.search'
 AND search IS NOT NULL
 AND user_id IS NOT NULL
-AND params['query_id'] IS NOT NULL
+AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 ) t_dis ON t_exp.pos_id=t_dis.pos_id
 
 LEFT JOIN
@@ -68,19 +70,20 @@ FROM
 php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.info'
-AND params['query_id'] IS NOT NULL
+AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 AND car_id IS NOT NULL
 ) t_click ON t_click.qcid=t_exp.qcid
 
 LEFT JOIN
 (
 SELECT
-CONCAT(user_id, '_', params['query_id'], '_', ppzc_decode(params['car_id'])) qcid
+    CONCAT(user_id, '_', params['query_id'], '_',
+        IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND (uri RLIKE '/order\\.precheck' OR uri RLIKE '/order\\.submit_precheck')
-AND params['query_id'] IS NOT NULL
-AND params['car_id'] IS NOT NULL
+AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+AND (params['car_id'] IS NOT NULL OR car_id IS NOT NULL)
 ) t_precheck ON t_precheck.qcid=t_exp.qcid
 
 LEFT JOIN
@@ -91,7 +94,7 @@ order_id
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND (uri RLIKE '/order\\.new' OR uri RLIKE '/order\\.create')
-AND params['query_id'] IS NOT NULL
+AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 AND car_id IS NOT NULL
 ) t_order ON t_order.qcid=t_exp.qcid;
 
