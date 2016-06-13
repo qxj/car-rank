@@ -20,47 +20,54 @@ t_exp.city_code,
 t_exp.user_id,
 t_exp.car_id,
 t_order.order_id,
-t_dis.distance,
+t_exp.distance,
 t_exp.pos,
 t_exp.page,
 t_exp.algo,
-t_exp.visit_time
+t_exp.visit_time,
+t_exp.price,
+t_exp.has_date,
+t_exp.review,
+t_exp.review_cnt,
+t_exp.auto_accept,
+t_exp.quick_accept,
+t_exp.is_recommend,
+t_exp.station,
+t_exp.confirm_rate
 FROM
-(
-SELECT
-expo_car_id car_id,
-user_id,
-city_code,
-params['page'] page,
-pos,
-IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
-visit_time,
-CONCAT(user_id, '_', params['query_id']) query_id,
-CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id,
-CONCAT(user_id, '_', params['query_id'], '_', expo_car_id) qcid,
-ds
-FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.result) t AS pos, expo_car_id
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.search'
-AND search IS NOT NULL
-AND user_id IS NOT NULL
-AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
-) t_exp
+    (
+    SELECT
+        city_code,
+        user_id,
+        car['id'] car_id,
+        `order_id`,
+        IF(params['date_begin'] IS NOT NULL,1,0) has_date,
 
-JOIN
-(
-SELECT
-distance,
-CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id
-FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.distance) t AS pos, distance
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.search'
-AND search IS NOT NULL
-AND user_id IS NOT NULL
-AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
-) t_dis ON t_exp.pos_id=t_dis.pos_id
+        car['distance'] distance,
+        car['price_daily'] price,
+        car['review'] review,
+        car['review_cnt'] review_cnt,
+        IF(car['auto_accept']='YES',1,0) auto_accept,
+        IF(car['quick_accept']='YES',1,0) quick_accept,
+        car['is_recommend'] is_recommend,
+        car['station_name'] station,
+        car['confirmed_rate_app'] confirm_rate,
+
+        params['page'] page,
+        pos,
+        IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
+        visit_time,
+        CONCAT(user_id, '_', params['query_id']) query_id,
+        CONCAT(user_id, '_', params['query_id'], '_', car['id']) qcid,
+        ds
+    FROM
+        php_svr_log LATERAL VIEW POSEXPLODE(search1) t AS pos, car
+    WHERE ds=${hiveconf:datestr}
+        AND uri RLIKE '/vehicle\\.search'
+        AND search1 IS NOT NULL
+        AND user_id IS NOT NULL
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        ) t_exp
 
 LEFT JOIN
 (
