@@ -35,7 +35,8 @@ class RankLegacy(IntervalDb):
         return self.db.insert(table_name, value_dict,
                               on_duplicate_ignore=False)
 
-    def _calc_score(self, row):
+    @staticmethod
+    def _calc_score(row):
         scores = {}
         # price
         scores['w_price'] = 0

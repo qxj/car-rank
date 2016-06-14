@@ -8,53 +8,46 @@
 # @created   2016-03-30 08:30:29
 #
 
-# OUTPUT:
-# pii (impress 0, click 1, precheck 2, order 3)
-# index
-# qid
-# label
-# city_code
-# user_id
-# car_id
-# distance
-
+from __future__ import division
 import sys
-
-
-def trans_label(label):
-    pii = 0
-    if label == "click":
-        pii = 1
-    elif label == "precheck":
-        pii = 2
-    elif label == "order":
-        pii = 3
-    return pii
 
 
 def deliver_rows(rows):
     has_neg = False
     for cols in rows:
-        # cols: qid, idx, label, city_code, user_id, car_id, distance, algo,
         # visit_time
-        qid = cols[0]  # for validation
         label = cols[2]
-        pii = -1
+        pii = False
         if not has_neg and label == "impress":
             has_neg = True
-        if has_neg or label == "order" or label == "precheck":
-            pii = trans_label(label)
-        if pii != -1:
-            cols.insert(1, "%d" % pii)
+        if has_neg or label in ("order", "precheck"):
+            pii = True
+        if pii:
             print "\t".join(cols)
         else:
             sys.stderr.write(
                 "reporter:counter:My Counters,Discard-Head-Clicks,1\n")
 
 
+def filter(clicked_len, clicked_cnt, rows):
+    if clicked_len > 0:
+        # only deliver items before last clicked one
+        items = rows[:clicked_len]
+        ctr = clicked_cnt / len(items)
+        if ctr > 0.2:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Ctr>0.2 Requests,1\n")
+        else:
+            deliver_rows(items)
+    else:
+        sys.stderr.write(
+            "reporter:counter:My Counters,No Clicked Requests,1\n")
+
+
 def main():
     last_qid = None
     clicked_len = 0
+    clicked_cnt = 0
     rows = []
     for line in sys.stdin:
         cols = line.strip().split()
@@ -64,18 +57,19 @@ def main():
         if not last_qid:
             last_qid = qid
         if qid != last_qid:  # new qid
-            if clicked_len > 0:
-                deliver_rows(rows[:clicked_len])
+            filter(clicked_len, clicked_cnt, rows)
             rows = []
             clicked_len = 0
+            clicked_cnt = 0
             last_qid = qid
         row = [qid, idx] + cols[1:]
         rows.append(row)
+        # only deliver requests which have been clicked
         if label != "impress":
             clicked_len = len(rows)
-    # trailing rows
-    if clicked_len > 0:
-        deliver_rows(rows[:clicked_len])
+            clicked_cnt += 1
+    # trailing request
+    filter(clicked_len, clicked_cnt, rows)
 
 if __name__ == "__main__":
     main()

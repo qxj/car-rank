@@ -1,9 +1,8 @@
 -- -*- mode: sql -*-
 
-CREATE EXTERNAL TABLE rank.query_log (
+CREATE EXTERNAL TABLE rank.corpus (
         query_id STRING,
-        pos INT,
-        page INT,
+        idx INT,
         label STRING,
         city_code STRING,
         user_id INT,

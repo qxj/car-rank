@@ -1,5 +1,5 @@
 
-CREATE EXTERNAL TABLE query_detail (
+CREATE EXTERNAL TABLE rank.query_detail (
         query_id STRING,
         algo STRING,
         user_id INT,

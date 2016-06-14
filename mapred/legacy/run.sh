@@ -4,7 +4,7 @@
 #
 # @file      run.sh
 # @author    Julian Qian <junist@gmail.com>
-# @created   2016-03-30 08:32:54
+# @created   2016-06-13 16:13:50
 #
 
 day=$(date +%Y%m%d -d "yesterday")
@@ -12,10 +12,12 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
-input0="rank/query_log/ds=$day"
+hive  -hiveconf datestr=$day -f legacy.hql
+
+input0="/user/hive/temp/legacy"
 
 input=$input0
-output="rank/corpus/ds=$day"
+output="rank/legacy/ds=$day"
 
 echo "INPUT: $input\nOUTPUT: $output"
 
@@ -36,5 +38,3 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./mapper.py \
     -file ./reducer.py \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
-
-hive -hiveconf ds=$day -f add_part.hql
