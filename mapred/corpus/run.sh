@@ -17,7 +17,7 @@ input0="rank/query_log/ds=$day"
 input=$input0
 output="rank/corpus/ds=$day"
 
-echo "INPUT: $input\nOUTPUT: $output"
+echo -e "INPUT: $input\nOUTPUT: $output"
 
 hadoop fs -rm -r $output
 
@@ -37,4 +37,4 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
-hive -hiveconf ds=$day -f add_part.hql
+hive -hiveconf ds=$day -f add_parts.hql

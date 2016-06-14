@@ -34,9 +34,9 @@ def filter(clicked_len, clicked_cnt, rows):
         # only deliver items before last clicked one
         items = rows[:clicked_len]
         ctr = clicked_cnt / len(items)
-        if ctr > 0.2:
+        if ctr > 0.4:
             sys.stderr.write(
-                "reporter:counter:My Counters,Ctr>0.2 Requests,1\n")
+                "reporter:counter:My Counters,High Ctr Requests,1\n")
         else:
             deliver_rows(items)
     else:
@@ -62,7 +62,7 @@ def main():
             clicked_len = 0
             clicked_cnt = 0
             last_qid = qid
-        row = [qid, idx] + cols[1:]
+        row = [qid, str(idx)] + cols[1:]
         rows.append(row)
         # only deliver requests which have been clicked
         if label != "impress":

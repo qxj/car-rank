@@ -1,8 +1,11 @@
 
 CREATE EXTERNAL TABLE rank.query_detail (
-        query_id STRING,
+        qid STRING,
         algo STRING,
         user_id INT,
+        `order_id` INT,
+        car_id INT,
+        visit_time STRING,
         city_code STRING,
         city STRING,
         user_lat DOUBLE,

@@ -18,10 +18,10 @@ CREATE EXTERNAL TABLE rank.corpus (
         auto_accept TINYINT,
         quick_accept TINYINT,
         is_recommend TINYINT,
-        station STRING,
+        station INT,
         confirm_rate INT,
         collect_cnt INT,
-        sales_label STRING
+        sales_label INT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED

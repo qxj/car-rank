@@ -11,7 +11,7 @@ INSERT OVERWRITE TABLE rank.query_log
 PARTITION (ds=${hiveconf:datestr})
 SELECT
 DISTINCT
-t_exp.query_id,
+t_exp.qid,
 t_exp.pos,
 t_exp.page,
 CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
@@ -62,7 +62,7 @@ FROM
         pos,
         IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
         visit_time,
-        CONCAT(user_id, '_', params['query_id']) query_id,
+        CONCAT(user_id, '_', params['query_id']) qid,
         CONCAT(user_id, '_', params['query_id'], '_', car['id']) qcid,
         ds
     FROM

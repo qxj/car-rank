@@ -10,14 +10,19 @@ ADD JAR /home/work/udf.jar;
 -- NOTE: this hql is expired after 20160616, because add the search1 field to instead of
 -- the original search.
 
-SET partpath="rank/query_log/ds=${hiveconf:datestr}";
+SET partpath="/user/work/rank/query_log/ds=${hiveconf:datestr}";
 
 -- INSERT OVERWRITE TABLE rank.query_log
 INSERT OVERWRITE DIRECTORY ${hiveconf:partpath}
-PARTITION (ds=${hiveconf:datestr})
+    ROW FORMAT DELIMITED
+    FIELDS TERMINATED BY '\t'
+    LINES TERMINATED BY '\n'
+    STORED AS TEXTFILE
 SELECT
 DISTINCT
 t_exp.query_id,
+t_exp.pos,
+t_exp.page,
 CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
     WHEN t_precheck.qcid IS NOT NULL THEN 'precheck'
     WHEN t_click.qcid IS NOT NULL THEN 'click'
@@ -27,8 +32,6 @@ t_exp.user_id,
 t_exp.car_id,
 t_order.order_id,
 t_dis.distance,
-t_exp.pos,
-t_exp.page,
 t_exp.algo,
 t_exp.visit_time,
 t_exp.has_date

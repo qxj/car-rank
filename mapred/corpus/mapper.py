@@ -34,7 +34,18 @@ def main():
         page = int(cols[2])  # [1,\inf)
         label = cols[3]
         has_date = cols[11]
+        # TODO feature engineering
         others = cols[3:]
+        # station
+        try:
+            if others[15] in ("NULL", '\N'):
+                others[15] = 0
+            else:
+                others[15] = 1
+        except:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Others 15th Missing,1\n")
+
         if page > 3:
             sys.stderr.write(
                 "reporter:counter:My Counters,Skip Trailing Pages,1\n")
