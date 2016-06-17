@@ -50,7 +50,7 @@ def main():
     clicked_cnt = 0
     rows = []
     for line in sys.stdin:
-        cols = line.strip().split()
+        cols = line.strip().split('\t')
         qid, idx_str = cols[0].split(':')
         label = cols[1]
         idx = int(idx_str)

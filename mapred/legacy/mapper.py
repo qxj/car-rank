@@ -11,7 +11,11 @@
 from __future__ import division
 import datetime
 import sys
-from utils import TableDesc
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
 
 
 def calc_score(row):
@@ -130,7 +134,7 @@ def discrete_distance(distance):
 
 
 def main():
-    td = TableDesc('legacy.desc')
+    td = table.TableMeta('legacy.desc')
     for line in sys.stdin:
         cols = line.strip().split('\t')
         data = td.fields(cols)

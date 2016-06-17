@@ -71,7 +71,7 @@ def main():
     last_query = None           # (qid, city_code, algo, visit_time)
     rows = []
     for line in sys.stdin:
-        cols = line.strip('\n').split()
+        cols = line.strip('\n').split('\t')
         qid, idx_str = cols[0].split(':')
         idx = float(idx_str)
         label = cols[1]

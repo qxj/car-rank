@@ -23,12 +23,15 @@
 
 import sys
 import os
-import datetime
-from utils import TableDesc
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
 
 
 def main():
-    td = TableDesc('query_log.desc')
+    td = table.TableMeta('query_log.desc')
     strict = os.getenv('strict_filter')
     for line in sys.stdin:
         cols = line.strip().split('\t')

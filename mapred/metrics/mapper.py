@@ -9,11 +9,15 @@
 #
 
 import sys
-from utils import TableDesc
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
 
 
 def main():
-    td = TableDesc('query_log.desc')
+    td = table.TableMeta('query_log.desc')
     for line in sys.stdin:
         cols = line.strip().split('\t')
         row = td.fields(cols)

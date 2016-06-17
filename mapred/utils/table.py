@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2016 Julian Qian
 #
-# @file      utils.py
+# @file      table.py
 # @author    Julian Qian <junist@gmail.com>
 # @created   2016-06-17 12:19:41
 #
@@ -12,7 +12,7 @@ import sys
 import datetime
 
 
-class TableDesc(object):
+class TableMeta(object):
 
     def __init__(self, desc_file):
         self._fields = self._read_desc(desc_file)

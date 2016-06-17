@@ -7,6 +7,8 @@
 # @created   2016-03-31 02:55:18
 #
 
+set -e
+
 day=$(date +%Y%m%d -d "yesterday")
 if [[ -n $1 ]]; then
     day=$1
@@ -21,7 +23,7 @@ output="rank/metrics/ds=$day"
 
 echo -e "INPUT: $input\nOUTPUT: $output"
 
-hadoop fs -rm -r $output
+hadoop fs -rm -r -f $output
 
 hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -D mapreduce.job.reduces=1 \
@@ -39,7 +41,7 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./mapper.py \
     -file ./reducer.py \
     -file ./query_log.desc \
-    -file ../utils.py
+    -file ../utils.mod
 
 
 hive -hiveconf ds=$day -f add_part.hql

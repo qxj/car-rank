@@ -60,7 +60,7 @@ def main():
     last_qid = None
     rows = []
     for line in sys.stdin:
-        cols = line.strip().split()
+        cols = line.strip().split('\t')
         qid, idx = cols[0].split(':')
         idx = int(idx)
         label = cols[1]
