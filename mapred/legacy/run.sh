@@ -7,12 +7,16 @@
 # @created   2016-06-13 16:13:50
 #
 
+set -e -o pipefail
+
 day=$(date +%Y%m%d -d "yesterday")
 if [[ -n $1 ]]; then
     day=$1
 fi
 
-hive  -hiveconf datestr=$day -f legacy.hql
+hive -hiveconf datestr=$day -f temp.legacy.hql
+
+hive -e "desc temp.legacy" > legacy.desc
 
 input0="/user/hive/temp/legacy"
 
@@ -21,7 +25,7 @@ output="rank/legacy/ds=$day"
 
 echo "INPUT: $input\nOUTPUT: $output"
 
-hadoop fs -rm -r $output
+hadoop fs -rm -r -f $output
 
 hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -D mapreduce.job.reduces=1 \
@@ -39,3 +43,5 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -file ./legacy.desc \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+
+hive -hiveconf ds=$day -f add_part.hql

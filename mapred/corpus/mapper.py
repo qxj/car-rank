@@ -23,28 +23,50 @@
 
 import sys
 import os
+import datetime
+
+
+def read_desc(desc_file):
+    fields = []
+    with open(desc_file) as fp:
+        for line in fp:
+            cols = line.strip().split()
+            if len(cols) != 2:
+                break
+            fields.append(cols)
+    return fields
+
+g_fields = read_desc('query_log.desc')
+
+
+def cols2fields(cols):
+    rets = {}
+    for i, item in enumerate(cols):
+        field, ftype = g_fields[i]
+        if item in ("\\N", "NULL"):
+            item = None
+        elif ftype in ('int', 'tinyint'):
+            item = int(item)
+        elif ftype in ('bigint', ):
+            item = datetime.datetime.fromtimestamp(int(item) / 1000)
+        elif ftype in ('float', 'double'):
+            item = float(item)
+        rets[field] = item
+    return rets
 
 
 def main():
     strict = os.getenv('strict_filter')
     for line in sys.stdin:
-        cols = line.strip().split()
-        qid = cols[0]
-        pos = int(cols[1])   # [0,14]
-        page = int(cols[2])  # [1,\inf)
-        label = cols[3]
-        has_date = cols[11]
+        cols = line.strip().split('\t')
+        row = cols2fields(cols)
+        qid = row['qid']
+        pos = row['pos']        # [0,14]
+        page = row['page']      # [1,\inf)
+        label = row['label']
+        has_date = row['has_date']
         # TODO feature engineering
         others = cols[3:]
-        # station
-        try:
-            if others[15] in ("NULL", '\N'):
-                others[15] = 0
-            else:
-                others[15] = 1
-        except:
-            sys.stderr.write(
-                "reporter:counter:My Counters,Others 15th Missing,1\n")
 
         if page > 3:
             sys.stderr.write(

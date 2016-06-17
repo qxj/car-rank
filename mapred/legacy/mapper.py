@@ -122,6 +122,8 @@ def read_desc(desc_file):
     with open(desc_file) as fp:
         for line in fp:
             cols = line.strip().split()
+            if len(cols) != 2:
+                break
             fields.append(cols)
     return fields
 
@@ -129,14 +131,18 @@ g_fields = read_desc('legacy.desc')
 
 
 def cols2fields(cols):
-    rets = []
+    rets = {}
     for i, item in enumerate(cols):
         field, ftype = g_fields[i]
-        if ftype in ('int', 'tinyint', 'bigint'):
+        if item in ("\\N", "NULL"):
+            item = None
+        elif ftype == 'bigint' and 'time' in field:
+            item = datetime.datetime.fromtimestamp(int(item) / 1000)
+        elif ftype in ('int', 'tinyint', 'bigint'):
             item = int(item)
         elif ftype in ('float', 'double'):
             item = float(item)
-        rets.append(item)
+        rets[field] = item
     return rets
 
 
@@ -153,11 +159,13 @@ def discrete_distance(distance):
 
 def main():
     for line in sys.stdin:
-        cols = line.strip().split()
-        qid = cols[0]
-        idx = cols[1]
-        label = cols[2]
+        cols = line.strip().split('\t')
         data = cols2fields(cols)
+
+        qid = data['qid']
+        idx = data['idx']
+        label = data['label']
+
         rets = calc_score(data)
         quality = rets['quality']
         distance = data['distance']
