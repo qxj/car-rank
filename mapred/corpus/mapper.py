@@ -24,42 +24,15 @@
 import sys
 import os
 import datetime
-
-
-def read_desc(desc_file):
-    fields = []
-    with open(desc_file) as fp:
-        for line in fp:
-            cols = line.strip().split()
-            if len(cols) != 2:
-                break
-            fields.append(cols)
-    return fields
-
-g_fields = read_desc('query_log.desc')
-
-
-def cols2fields(cols):
-    rets = {}
-    for i, item in enumerate(cols):
-        field, ftype = g_fields[i]
-        if item in ("\\N", "NULL"):
-            item = None
-        elif ftype in ('int', 'tinyint'):
-            item = int(item)
-        elif ftype in ('bigint', ):
-            item = datetime.datetime.fromtimestamp(int(item) / 1000)
-        elif ftype in ('float', 'double'):
-            item = float(item)
-        rets[field] = item
-    return rets
+from utils import TableDesc
 
 
 def main():
+    td = TableDesc('query_log.desc')
     strict = os.getenv('strict_filter')
     for line in sys.stdin:
         cols = line.strip().split('\t')
-        row = cols2fields(cols)
+        row = td.fields(cols)
         qid = row['qid']
         pos = row['pos']        # [0,14]
         page = row['page']      # [1,\inf)

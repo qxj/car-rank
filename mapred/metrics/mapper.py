@@ -9,18 +9,21 @@
 #
 
 import sys
+from utils import TableDesc
 
 
 def main():
+    td = TableDesc('query_log.desc')
     for line in sys.stdin:
-        cols = line.strip().split()
-        qid = cols[0]
-        label = cols[1]
-        city_code = cols[2]
-        pos = int(cols[7])   # [0,14]
-        page = int(cols[8])  # [1,\inf)
-        algo = cols[9]
-        visit_time = cols[10]
+        cols = line.strip().split('\t')
+        row = td.fields(cols)
+        qid = row['qid']
+        label = row['label']
+        city_code = row['city_code']
+        pos = row['pos']        # [0,14]
+        page = row['page']      # [1,\inf)
+        algo = row['algo']
+        visit_time = row['visit_time']
         if page > 5:
             sys.stderr.write(
                 "reporter:counter:My Counters,Skip Trailing Pages,1\n")
@@ -40,6 +43,8 @@ def main():
                 sys.stderr.write("reporter:counter:My Counters,CV-Unknown,1\n")
             print "%s:%.10d\t%s\t%s\t%s\t%s" % (
                 qid, idx, label, city_code, algo, visit_time)
+        else:
+            sys.stderr.write("reporter:counter:My Counters,Impressed,1\n")
 
 if __name__ == "__main__":
     main()

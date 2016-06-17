@@ -11,6 +11,7 @@
 from __future__ import division
 import datetime
 import sys
+from utils import TableDesc
 
 
 def calc_score(row):
@@ -117,35 +118,6 @@ def calc_score(row):
     return rows
 
 
-def read_desc(desc_file):
-    fields = []
-    with open(desc_file) as fp:
-        for line in fp:
-            cols = line.strip().split()
-            if len(cols) != 2:
-                break
-            fields.append(cols)
-    return fields
-
-g_fields = read_desc('legacy.desc')
-
-
-def cols2fields(cols):
-    rets = {}
-    for i, item in enumerate(cols):
-        field, ftype = g_fields[i]
-        if item in ("\\N", "NULL"):
-            item = None
-        elif ftype == 'bigint' and 'time' in field:
-            item = datetime.datetime.fromtimestamp(int(item) / 1000)
-        elif ftype in ('int', 'tinyint', 'bigint'):
-            item = int(item)
-        elif ftype in ('float', 'double'):
-            item = float(item)
-        rets[field] = item
-    return rets
-
-
 def discrete_distance(distance):
     d1, d2, d3 = 0, 0, 0
     if distance < 2:
@@ -158,9 +130,10 @@ def discrete_distance(distance):
 
 
 def main():
+    td = TableDesc('legacy.desc')
     for line in sys.stdin:
         cols = line.strip().split('\t')
-        data = cols2fields(cols)
+        data = td.fields(cols)
 
         qid = data['qid']
         idx = data['idx']

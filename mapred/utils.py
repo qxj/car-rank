@@ -15,7 +15,7 @@ import datetime
 class TableDesc(object):
 
     def __init__(self, desc_file):
-        self.fields = self._read_desc(desc_file)
+        self._fields = self._read_desc(desc_file)
 
     def _read_desc(self, desc_file):
         fields = []
@@ -30,7 +30,7 @@ class TableDesc(object):
     def fields(self, cols):
         rets = {}
         for i, item in enumerate(cols):
-            field, ftype = self.fields[i]
+            field, ftype = self._fields[i]
             if item in ("\\N", "NULL"):
                 item = None
             elif ftype == 'bigint' and 'time' in field:

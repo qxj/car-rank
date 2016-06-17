@@ -12,12 +12,14 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
+hive -e "desc rank.query_log" > query_log.desc
+
 input0="rank/query_log/ds=$day"
 
 input=$input0
 output="rank/metrics/ds=$day"
 
-echo "INPUT: $input\nOUTPUT: $output"
+echo -e "INPUT: $input\nOUTPUT: $output"
 
 hadoop fs -rm -r $output
 
@@ -35,6 +37,9 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -mapper mapper.py \
     -reducer reducer.py \
     -file ./mapper.py \
-    -file ./reducer.py
+    -file ./reducer.py \
+    -file ./query_log.desc \
+    -file ../utils.py
+
 
 hive -hiveconf ds=$day -f add_part.hql

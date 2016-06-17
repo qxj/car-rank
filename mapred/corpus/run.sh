@@ -37,6 +37,7 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -reducer reducer.py \
     -file ./mapper.py \
     -file ./reducer.py \
+    -file ../utils.py \
     -file ./query_log.desc \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
