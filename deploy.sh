@@ -1,13 +1,39 @@
-#!/bin/bash
-# @(#) deploy.sh  Time-stamp: <Julian Qian 2015-11-25 11:16:55>
-# Copyright 2015 Julian Qian
-# Author: Julian Qian <junist@gmail.com>
-# Version: $Id: deploy.sh,v 0.1 2015-05-22 11:32:06 jqian Exp $
+#!/usr/bin/env bash
+#
+# Copyright (C) 2016 Julian Qian
+#
+# @file      deploy.sh
+# @author    Julian Qian <junist@gmail.com>
+# @created   2016-06-17 11:00:42
 #
 
-curl -u pptester:pptester http://jenkins.dzuche.com/view/PHP/job/data-rank/process/buildWithOpsParameters
-if [[ $? -eq 0 ]]; then
-    echo "Deployed OK."
-else
-    echo "Failed to deploy!"
-fi
+cd $(dirname $0)
+
+sync_relay()
+{
+    from=$1
+    to=$2
+    rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress $from qianxiaojun@121.42.29.135:rank/$to
+}
+
+sync_log01()
+{
+    from=$1
+    to=$2
+    rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress $from work@10.161.59.223:rank/$to
+}
+
+case $1 in
+    relay)
+        sync_relay deploy.sh ""
+        sync_relay mapred/ mapred
+        sync_relay hive/ hive
+        ;;
+    log01)
+        sync_log01 "mapred/*" ""
+        sync_log01 hive/query_log/ hive
+        ;;
+    *)
+        echo "invalid arguments"
+        ;;
+esac
