@@ -142,13 +142,14 @@ def main():
         qid = data['qid']
         idx = data['idx']
         label = data['label']
+        city_code = data['city_code']
 
         rets = calc_score(data)
         quality = rets['quality']
         distance = data['distance']
         d1, d2, d3 = discrete_distance(distance)
         score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
-        print '%s:%.10d\t%s\t%f' % (qid, idx, label, score)
+        print '%s:%.10d\t%s\t%f\t%s' % (qid, idx, label, score, city_code)
 
 if __name__ == "__main__":
     main()

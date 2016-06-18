@@ -71,6 +71,7 @@ FROM
         AND uri RLIKE '/vehicle\\.search'
         AND search1 IS NOT NULL
         AND user_id IS NOT NULL
+        AND city_code IS NOT NULL
         AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
         ) t_exp
 

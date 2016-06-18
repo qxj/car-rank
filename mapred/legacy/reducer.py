@@ -25,7 +25,7 @@ def label2gain(label):
 
 
 # qid for debug
-def deliver(qid, rows):
+def deliver(qid, city, rows):
     d1 = 0
     dn = 0
     for i, row in enumerate(rows):
@@ -53,11 +53,12 @@ def deliver(qid, rows):
         sys.stderr.write("reporter:counter:My Counters,Better,1\n")
     else:
         sys.stderr.write("reporter:counter:My Counters,Worse,1\n")
-    print "%s\t%f\t%f\t%d" % (qid, ndcg1, ndcg2, better)
+    print "%s\t%f\t%f\t%d\t%s" % (qid, ndcg1, ndcg2, better, city)
 
 
 def main():
     last_qid = None
+    last_city = None
     rows = []
     for line in sys.stdin:
         cols = line.strip().split('\t')
@@ -66,11 +67,14 @@ def main():
         label = cols[1]
         gain = label2gain(label)
         score = float(cols[2])
+        city_code = cols[3]
         if not last_qid:
             last_qid = qid
+            last_city = city_code
         if last_qid != qid:
-            deliver(last_qid, rows)
+            deliver(last_qid, last_city, rows)
             last_qid = qid
+            last_city = city_code
             rows = []
         row = (qid, idx, gain, score)
         rows.append(row)

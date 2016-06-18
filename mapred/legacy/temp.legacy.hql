@@ -12,6 +12,7 @@ SELECT
 c.qid,
 c.idx,
 c.label,
+c.city_code,
 c.user_id,
 c.car_id,
 c.`order_id`,

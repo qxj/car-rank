@@ -4,7 +4,8 @@ CREATE TABLE rank.legacy (
         qid STRING,
         dcg1 FLOAT,
         dcg2 FLOAT,
-        better INT
+        better INT,
+        city_code STRING
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED
