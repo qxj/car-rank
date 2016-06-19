@@ -1,10 +1,11 @@
 -- -*- mode: sql -*-
 
 CREATE EXTERNAL TABLE rank.query_log (
-        query_id STRING,
+        qid STRING,
+        idx INT,
+        label STRING,
         pos INT,
         page INT,
-        label STRING,
         city_code STRING,
         user_id INT,
         car_id INT,

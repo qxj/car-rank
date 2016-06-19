@@ -40,6 +40,7 @@ def main():
         qid = row['qid']
         pos = row['pos']        # [0,14]
         page = row['page']      # [1,\inf)
+        idx = row['idx']
         label = row['label']
         distance = row['distance']
         has_date = row['has_date']
@@ -63,7 +64,6 @@ def main():
                 sys.stderr.write(
                     "reporter:counter:My Counters,Not Select Date,1\n")
                 continue
-        idx = (page - 1) * 15 + pos
         new_id = "%s:%.10d" % (qid, idx)
         # OUTPUT: newid, label, city_code, user_id, car_id, distance
         print new_id + "\t" + "\t".join(others)

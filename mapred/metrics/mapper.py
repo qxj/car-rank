@@ -27,16 +27,14 @@ def main():
         qid = row['qid']
         label = row['label']
         city_code = row['city_code']
-        pos = row['pos']        # [0,14]
         page = row['page']      # [1,\inf)
+        idx = row['idx']
         algo = row['algo']
         visit_time = row['visit_time']
         if page > max_page:
             sys.stderr.write(
                 "reporter:counter:My Counters,Skip >%dPages,1\n" % max_page)
             continue
-        # idx starts from zero
-        idx = (page - 1) * 15 + pos
         # only clicked items are required
         if label != "impress":
             if label == 'click':

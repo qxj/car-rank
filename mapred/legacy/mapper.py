@@ -147,6 +147,7 @@ def main():
         has_date = data['has_date']
         distance = data['distance']
         algo = data['algo']
+        car_id = data['car_id']
 
         if distance is None:
             sys.stderr.write(
@@ -166,8 +167,8 @@ def main():
 
         # score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
         score = quality - 7 * (distance - send_score)
-        print '%s:%.10d\t%s\t%f\t%s\t%d\t%s' % (qid, idx, label, score,
-                                                city_code, has_date, algo)
+        print '%s:%.10d\t%s\t%f\t%d\t%s\t%d\t%s' % (
+            qid, idx, label, score, car_id, city_code, has_date, algo)
 
 if __name__ == "__main__":
     main()

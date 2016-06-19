@@ -27,6 +27,19 @@ def label2gain(label):
     return gain
 
 
+def cmp_ndcg(ndcg1, ndcg2):
+    better = 0
+    if ndcg1 - ndcg2 > g_ndcg_tolerance:
+        better = -1
+        sys.stderr.write("reporter:counter:My Counters,Worse,1\n")
+    elif ndcg2 - ndcg1 > g_ndcg_tolerance:
+        better = 1
+        sys.stderr.write("reporter:counter:My Counters,Better,1\n")
+    else:
+        sys.stderr.write("reporter:counter:My Counters,Equal,1\n")
+    return better
+
+
 # qid for debug
 def deliver(info, rows):
     qid, city_code, has_date, algo = info
@@ -51,15 +64,7 @@ def deliver(info, rows):
         gain = row[2]
         d2 += gain / cmath.log(i + 2, 2).real
     ndcg2 = d2 / dn
-    better = 0
-    if ndcg1 - ndcg2 > g_ndcg_tolerance:
-        better = -1
-        sys.stderr.write("reporter:counter:My Counters,Worse,1\n")
-    elif ndcg2 - ndcg1 > g_ndcg_tolerance:
-        better = 1
-        sys.stderr.write("reporter:counter:My Counters,Better,1\n")
-    else:
-        sys.stderr.write("reporter:counter:My Counters,Equal,1\n")
+    better = cmp_ndcg(ndcg1, ndcg2)
     print "%s\t%f\t%f\t%d\t%s\t%d\t%s" % (qid, ndcg1, ndcg2, better,
                                           city_code, has_date, algo)
 
@@ -74,9 +79,10 @@ def main():
         label = cols[1]
         gain = label2gain(label)
         score = float(cols[2])
-        city_code = cols[3]
-        has_date = int(cols[4])
-        algo = cols[5]
+        # car_id = int(cols[3])
+        city_code = cols[4]
+        has_date = int(cols[5])
+        algo = cols[6]
         if not last_info:
             last_info = (qid, city_code, has_date, algo)
         if last_info[0] != qid:

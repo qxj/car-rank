@@ -12,12 +12,13 @@ PARTITION (ds=${hiveconf:datestr})
 SELECT
 DISTINCT
 t_exp.qid,
-t_exp.pos,
-t_exp.page,
+t_exp.idx,
 CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
     WHEN t_precheck.qcid IS NOT NULL THEN 'precheck'
     WHEN t_click.qcid IS NOT NULL THEN 'click'
     ELSE 'impress' END AS label,
+t_exp.pos,
+t_exp.page,
 t_exp.city_code,
 t_exp.user_id,
 t_exp.car_id,
@@ -60,6 +61,7 @@ FROM
 
         params['page'] page,
         pos,
+        ( (CAST(params['page'] AS INT) -1) * CAST(params['pagesize'] AS INT) + pos) idx,
         IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
         visit_time,
         CONCAT(user_id, '_', params['query_id']) qid,
@@ -73,6 +75,7 @@ FROM
         AND user_id IS NOT NULL
         AND city_code IS NOT NULL
         AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND (params['page'] IS NOT NULL AND params['pagesize'] IS NOT NULL)
         ) t_exp
 
 LEFT JOIN
