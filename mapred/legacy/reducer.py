@@ -10,7 +10,10 @@
 
 from __future__ import division
 import sys
+import os
 import cmath
+
+g_ndcg_tolerance = float(os.getenv('ndcg_tolerance'))
 
 
 def label2gain(label):
@@ -25,7 +28,8 @@ def label2gain(label):
 
 
 # qid for debug
-def deliver(qid, city, rows):
+def deliver(info, rows):
+    qid, city_code, has_date, algo = info
     d1 = 0
     dn = 0
     for i, row in enumerate(rows):
@@ -48,17 +52,20 @@ def deliver(qid, city, rows):
         d2 += gain / cmath.log(i + 2, 2).real
     ndcg2 = d2 / dn
     better = 0
-    if ndcg2 > ndcg1:
+    if ndcg1 - ndcg2 > g_ndcg_tolerance:
+        better = -1
+        sys.stderr.write("reporter:counter:My Counters,Worse,1\n")
+    elif ndcg2 - ndcg1 > g_ndcg_tolerance:
         better = 1
         sys.stderr.write("reporter:counter:My Counters,Better,1\n")
     else:
-        sys.stderr.write("reporter:counter:My Counters,Worse,1\n")
-    print "%s\t%f\t%f\t%d\t%s" % (qid, ndcg1, ndcg2, better, city)
+        sys.stderr.write("reporter:counter:My Counters,Equal,1\n")
+    print "%s\t%f\t%f\t%d\t%s\t%d\t%s" % (qid, ndcg1, ndcg2, better,
+                                          city_code, has_date, algo)
 
 
 def main():
-    last_qid = None
-    last_city = None
+    last_info = None
     rows = []
     for line in sys.stdin:
         cols = line.strip().split('\t')
@@ -68,16 +75,17 @@ def main():
         gain = label2gain(label)
         score = float(cols[2])
         city_code = cols[3]
-        if not last_qid:
-            last_qid = qid
-            last_city = city_code
-        if last_qid != qid:
-            deliver(last_qid, last_city, rows)
-            last_qid = qid
-            last_city = city_code
+        has_date = cols[4]
+        algo = cols[5]
+        if not last_info:
+            last_info = (qid, city_code, has_date, algo)
+        if last_info[0] != qid:
+            deliver(last_info, rows)
+            last_info = (qid, city_code, has_date, algo)
             rows = []
         row = (qid, idx, gain, score)
         rows.append(row)
+    deliver(last_info, rows)
 
 
 if __name__ == "__main__":

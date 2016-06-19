@@ -10,6 +10,11 @@
 
 from __future__ import division
 import sys
+import os
+
+g_strict = True if os.getenv('strict_mode') == "1" else False
+g_max_page = int(os.getenv('max_page', 20))
+g_max_ctr = float(os.getenv('max_ctr', 0.5))
 
 
 def deliver_rows(rows):
@@ -24,21 +29,44 @@ def deliver_rows(rows):
             pii = True
         if pii:
             print "\t".join(cols)
+            sys.stderr.write("reporter:counter:My Counters,Output-Rows,1\n")
         else:
             sys.stderr.write(
                 "reporter:counter:My Counters,Discard-Head-Clicks,1\n")
 
 
+def deliver_rows_all(rows):
+    for cols in rows:
+        print "\t".join(cols)
+        sys.stderr.write("reporter:counter:My Counters,Output-Rows,1\n")
+
+
 def filter(clicked_len, clicked_cnt, rows):
+    global g_strict, g_max_ctr, g_max_page
     if clicked_len > 0:
-        # only deliver items before last clicked one
-        items = rows[:clicked_len]
-        ctr = clicked_cnt / len(items)
-        if ctr > 0.4:
+        if g_strict:
+            # only deliver items before last clicked one
+            rows = rows[:clicked_len]
+        ctr = clicked_cnt / len(rows)
+        if ctr > g_max_ctr:
             sys.stderr.write(
-                "reporter:counter:My Counters,High Ctr Requests,1\n")
+                "reporter:counter:My Counters,Skip Ctr>%f,1\n" % g_max_ctr)
+            return
+        if g_strict:
+            deliver_rows(rows)
         else:
-            deliver_rows(items)
+            deliver_rows_all(rows)
+            idx = rows[-1][1]
+            idx = int(idx)
+            if idx < g_max_page:
+                sys.stderr.write(
+                    "reporter:counter:My Counters,Trail<%d Pages Requests,1\n"
+                    % g_max_page)
+            if len(rows) < g_max_page * 15:
+                sys.stderr.write(
+                    "reporter:counter:My Counters,<%d Pages Requests,1\n"
+                    % g_max_page)
+        sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
     else:
         sys.stderr.write(
             "reporter:counter:My Counters,No Clicked Requests,1\n")

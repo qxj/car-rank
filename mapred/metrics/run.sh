@@ -41,7 +41,9 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./mapper.py \
     -file ./reducer.py \
     -file ./query_log.desc \
-    -file ../utils.mod
+    -file ../utils.mod \
+    -cmdenv max_ctr=0.4 \
+    -cmdenv max_page=10
 
 
 hive -hiveconf ds=$day -f add_part.hql

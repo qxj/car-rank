@@ -9,6 +9,7 @@
 #
 
 import sys
+import os
 
 import zipimport
 imp = zipimport.zipimporter('utils.mod')
@@ -18,6 +19,8 @@ from utils import table
 
 def main():
     td = table.TableMeta('query_log.desc')
+    max_page = int(os.getenv('max_page', 20))
+
     for line in sys.stdin:
         cols = line.strip().split('\t')
         row = td.fields(cols)
@@ -28,9 +31,9 @@ def main():
         page = row['page']      # [1,\inf)
         algo = row['algo']
         visit_time = row['visit_time']
-        if page > 5:
+        if page > max_page:
             sys.stderr.write(
-                "reporter:counter:My Counters,Skip Trailing Pages,1\n")
+                "reporter:counter:My Counters,Skip >%dPages,1\n" % max_page)
             continue
         # idx starts from zero
         idx = (page - 1) * 15 + pos

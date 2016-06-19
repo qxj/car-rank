@@ -39,6 +39,9 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -file ../utils.mod \
     -file ./query_log.desc \
+    -cmdenv strict_mode=0 \
+    -cmdenv max_page=10 \
+    -cmdenv max_ctr=0.4 \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
 hive -hiveconf ds=$day -f add_part.hql

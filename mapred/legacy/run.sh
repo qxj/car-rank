@@ -14,16 +14,20 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
-hive -hiveconf datestr=$day -f temp.legacy.hql
+if [[ -z DB_EXIST ]]; then
+    echo "Create temp.legacy in ds=$day ..."
 
-hive -e "desc temp.legacy" > legacy.desc
+    hive -hiveconf datestr=$day -f temp.legacy.hql
+
+    hive -e "desc temp.legacy" > legacy.desc
+fi
 
 input0="/user/hive/temp/legacy"
 
 input=$input0
 output="rank/legacy/ds=$day"
 
-echo "INPUT: $input\nOUTPUT: $output"
+echo -e "INPUT: $input\nOUTPUT: $output"
 
 hadoop fs -rm -r -f $output
 
@@ -43,6 +47,7 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -file ../utils.mod \
     -file ./legacy.desc \
+    -cmdenv ndcg_tolerance=0.01 \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
 hive -hiveconf ds=$day -f add_part.hql

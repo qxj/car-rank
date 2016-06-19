@@ -2,10 +2,11 @@
 
 CREATE TABLE rank.legacy (
         qid STRING,
-        dcg1 FLOAT,
-        dcg2 FLOAT,
+        ndcg1 FLOAT,
+        ndcg2 FLOAT,
         better INT,
-        city_code STRING
+        city_code STRING,
+        has_date INT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED

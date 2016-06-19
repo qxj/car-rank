@@ -11,6 +11,10 @@
 from __future__ import division
 import sys
 import cmath
+import os
+
+g_max_page = int(os.getenv('max_page', 20))
+g_max_ctr = float(os.getenv('max_ctr', 0.5))
 
 
 def label2gain(label):
@@ -33,13 +37,15 @@ def gain2label(gain):
 
 
 def process(rows, query):
+    global g_max_ctr
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
     # skip, if more than 5 click per page
     ctr = len(rows) / (rows[-1][0] + 1)
-    if ctr > 0.3:
-        sys.stderr.write("reporter:counter:My Counters,Skip CTR 0.3,1\n")
+    if ctr > g_max_ctr:
+        sys.stderr.write(
+            "reporter:counter:My Counters,Skip CTR>%f,1\n" % g_max_ctr)
         return
     row_max_gain = max(rows, key=lambda x: x[1])
     label = gain2label(row_max_gain[1])
@@ -64,7 +70,7 @@ def process(rows, query):
     query.insert(2, ap_str)
     query.insert(3, ndcg_str)
     print "\t".join(query)
-    sys.stderr.write("reporter:counter:My Counters,Metrics Counter,1\n")
+    sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
 
 
 def main():

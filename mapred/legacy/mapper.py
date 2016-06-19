@@ -119,6 +119,7 @@ def calc_score(row):
     #     rows[k] = round(v, 2)
     rows['quality'] = round(car_score, 2)
     rows['car_id'] = row['car_id']
+    rows['send_score'] = scores['w_send']
     return rows
 
 
@@ -143,13 +144,30 @@ def main():
         idx = data['idx']
         label = data['label']
         city_code = data['city_code']
+        has_date = data['has_date']
+        distance = data['distance']
+        algo = data['algo']
+
+        if distance is None:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Unexcepted Distance,1\n")
+            continue
 
         rets = calc_score(data)
         quality = rets['quality']
-        distance = data['distance']
+        send_score = rets['send_score']
         d1, d2, d3 = discrete_distance(distance)
-        score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
-        print '%s:%.10d\t%s\t%f\t%s' % (qid, idx, label, score, city_code)
+
+        if quality < 0 or quality > 100:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Abnormal Quality,1\n")
+        sys.stderr.write(
+            "reporter:counter:My Counters,Processed Rows,1\n")
+
+        # score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
+        score = quality - 7 * (distance - send_score)
+        print '%s:%.10d\t%s\t%f\t%s\t%d\t%s' % (qid, idx, label, score,
+                                                city_code, has_date, algo)
 
 if __name__ == "__main__":
     main()
