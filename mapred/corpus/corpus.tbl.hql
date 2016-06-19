@@ -1,7 +1,7 @@
 -- -*- mode: sql -*-
 
 CREATE EXTERNAL TABLE rank.corpus (
-        query_id STRING,
+        qid STRING,
         idx INT,
         label STRING,
         city_code STRING,
