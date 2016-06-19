@@ -6,7 +6,8 @@ CREATE TABLE rank.legacy (
         ndcg2 FLOAT,
         better INT,
         city_code STRING,
-        has_date INT
+        has_date INT,
+        algo STRING
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED

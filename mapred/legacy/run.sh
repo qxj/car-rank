@@ -14,7 +14,7 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
-if [[ -z DB_EXIST ]]; then
+if [[ -z $DB_EXIST ]]; then
     echo "Create temp.legacy in ds=$day ..."
 
     hive -hiveconf datestr=$day -f temp.legacy.hql

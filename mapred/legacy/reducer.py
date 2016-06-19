@@ -75,7 +75,7 @@ def main():
         gain = label2gain(label)
         score = float(cols[2])
         city_code = cols[3]
-        has_date = cols[4]
+        has_date = int(cols[4])
         algo = cols[5]
         if not last_info:
             last_info = (qid, city_code, has_date, algo)
@@ -85,7 +85,8 @@ def main():
             rows = []
         row = (qid, idx, gain, score)
         rows.append(row)
-    deliver(last_info, rows)
+    if last_info is not None:
+        deliver(last_info, rows)
 
 
 if __name__ == "__main__":
