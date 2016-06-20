@@ -13,6 +13,7 @@ if [[ -n $1 ]]; then
 fi
 
 hive -e "desc rank.query_log" > query_log.desc
+hive -e "desc rank.corpus" > corpus.desc
 
 input0="rank/query_log/ds=$day"
 
@@ -39,6 +40,7 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -file ../utils.mod \
     -file ./query_log.desc \
+    -file ./corpus.desc \
     -cmdenv strict_mode=0 \
     -cmdenv max_page=10 \
     -cmdenv max_ctr=0.4 \

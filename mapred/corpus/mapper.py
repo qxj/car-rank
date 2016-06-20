@@ -23,6 +23,7 @@
 
 import sys
 import os
+import json
 
 import zipimport
 imp = zipimport.zipimporter('utils.mod')
@@ -45,7 +46,7 @@ def main():
         distance = row['distance']
         has_date = row['has_date']
         # TODO feature engineering
-        others = cols[3:]
+        payload = json.dumps(row)
 
         if page > max_page:
             sys.stderr.write(
@@ -53,7 +54,7 @@ def main():
             continue
         if distance is None:
             sys.stderr.write(
-                "reporter:counter:My Counters,NoneType Distance,1\n")
+                "reporter:counter:My Counters,Skip NoneType Distance,1\n")
             continue
         if strict:
             if label == "impress" and page > 2:
@@ -66,7 +67,7 @@ def main():
                 continue
         new_id = "%s:%.10d" % (qid, idx)
         # OUTPUT: newid, label, city_code, user_id, car_id, distance
-        print new_id + "\t" + "\t".join(others)
+        print new_id + "\t" + payload
 
 
 if __name__ == "__main__":

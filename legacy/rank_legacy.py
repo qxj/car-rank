@@ -162,7 +162,7 @@ class RankLegacy(IntervalDb):
         for row in rows:
             data = self._calc_score(row)
             # z-score norm
-            data['quality_norm'] = (data['quality'] - qavg) / qvar
+            data['norm_quality'] = (data['quality'] - qavg) / qvar
             logger.debug('[rank] score: %s', data)
             written += self._write_score(data)
             if written % 100 == 0:

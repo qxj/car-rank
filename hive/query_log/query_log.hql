@@ -76,6 +76,7 @@ FROM
         AND city_code IS NOT NULL
         AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
         AND (params['page'] IS NOT NULL AND params['pagesize'] IS NOT NULL)
+        AND (car['distance'] IS NOT NULL AND car['distance'] != "null")
         ) t_exp
 
 LEFT JOIN

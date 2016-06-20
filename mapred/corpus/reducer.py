@@ -11,10 +11,29 @@
 from __future__ import division
 import sys
 import os
+import json
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
 
 g_strict = True if os.getenv('strict_mode') == "1" else False
 g_max_page = int(os.getenv('max_page', 20))
 g_max_ctr = float(os.getenv('max_ctr', 0.5))
+g_td = table.TableMeta('corpus.desc')
+
+
+def process(field, value):
+    if field == 'station':
+        if value and value != '\N':
+            return '1'
+        return '0'
+    return str(value)
+
+
+def print1(cols):
+    print '\t'.join(g_td.convert(cols, process_fn=process))
 
 
 def deliver_rows(rows):
@@ -28,8 +47,8 @@ def deliver_rows(rows):
         if has_neg or label in ("order", "precheck"):
             pii = True
         if pii:
-            print "\t".join(cols)
-            sys.stderr.write("reporter:counter:My Counters,Output-Rows,1\n")
+            print1(cols)
+            sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
         else:
             sys.stderr.write(
                 "reporter:counter:My Counters,Discard-Head-Clicks,1\n")
@@ -37,8 +56,8 @@ def deliver_rows(rows):
 
 def deliver_rows_all(rows):
     for cols in rows:
-        print "\t".join(cols)
-        sys.stderr.write("reporter:counter:My Counters,Output-Rows,1\n")
+        print1(cols)
+        sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
 
 
 def filter(clicked_len, clicked_cnt, rows):
@@ -56,17 +75,13 @@ def filter(clicked_len, clicked_cnt, rows):
             deliver_rows(rows)
         else:
             deliver_rows_all(rows)
-            idx = rows[-1][1]
+            idx = rows[-1]['idx']
             idx = int(idx)
-            if idx < g_max_page:
-                sys.stderr.write(
-                    "reporter:counter:My Counters,Trail<%d Pages Requests,1\n"
-                    % g_max_page)
             if len(rows) < g_max_page * 15:
                 sys.stderr.write(
                     "reporter:counter:My Counters,<%d Pages Requests,1\n"
                     % g_max_page)
-        sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
+        sys.stderr.write("reporter:counter:My Counters,Output Requests,1\n")
     else:
         sys.stderr.write(
             "reporter:counter:My Counters,No Clicked Requests,1\n")
@@ -79,10 +94,10 @@ def main():
     rows = []
     for line in sys.stdin:
         cols = line.strip().split('\t')
-        qid, idx_str = cols[0].split(':')
-        label = cols[1]
-        idx = int(idx_str)
-        if not last_qid:
+        qid, _ = cols[0].split(':')
+        row = json.loads(cols[1])
+        label = row['label']
+        if last_qid is None:
             last_qid = qid
         if qid != last_qid:  # new qid
             filter(clicked_len, clicked_cnt, rows)
@@ -90,7 +105,6 @@ def main():
             clicked_len = 0
             clicked_cnt = 0
             last_qid = qid
-        row = [qid, str(idx)] + cols[1:]
         rows.append(row)
         # only deliver requests which have been clicked
         if label != "impress":

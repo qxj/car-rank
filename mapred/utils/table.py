@@ -18,16 +18,26 @@ class TableMeta(object):
         self._fields = self._read_desc(desc_file)
 
     def _read_desc(self, desc_file):
+        '''
+        @return [(field, type), ...]
+        '''
         fields = []
         with open(desc_file) as fp:
             for line in fp:
                 cols = line.strip().split()
                 if len(cols) != 2:
                     break
+                # WORKAROUND skip partition(ds STRING)
+                if cols[0] == 'ds':
+                    break
                 fields.append(cols)
         return fields
 
     def fields(self, cols):
+        '''
+        @cols [value, ...]
+        @return {field: value, ...}
+        '''
         rets = {}
         for i, item in enumerate(cols):
             field, ftype = self._fields[i]
@@ -41,6 +51,19 @@ class TableMeta(object):
                 item = float(item)
             rets[field] = item
         return rets
+
+    def convert(self, fromRow, default='\N', process_fn=None):
+        '''
+        @fromRow {field: value, ...}
+        @return [value, ...]
+        '''
+        toRow = []
+        for f, _ in self._fields:
+            v = fromRow.get(f, default)
+            if process_fn:
+                v = process_fn(f, v)
+            toRow.append(v)
+        return toRow
 
 
 def main():
