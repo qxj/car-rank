@@ -11,6 +11,7 @@
 from __future__ import division
 import datetime
 import sys
+import json
 
 import zipimport
 imp = zipimport.zipimporter('utils.mod')
@@ -142,12 +143,7 @@ def main():
 
         qid = data['qid']
         idx = data['idx']
-        label = data['label']
-        city_code = data['city_code']
-        has_date = data['has_date']
         distance = data['distance']
-        algo = data['algo']
-        car_id = data['car_id']
 
         if distance is None:
             sys.stderr.write(
@@ -167,8 +163,18 @@ def main():
 
         # score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
         score = quality - 7 * (distance - send_score)
-        print '%s:%.10d\t%s\t%f\t%d\t%s\t%d\t%s' % (
-            qid, idx, label, score, car_id, city_code, has_date, algo)
+
+        payload = {
+            "car_id": data['car_id'],
+            "label": data['label'],
+            "city_code": data['city_code'],
+            "has_date": data['has_date'],
+            "algo": data['algo'],
+            "distance": distance,
+            "score": score,
+        }
+
+        print '%s:%.10d\t%s' % (qid, idx, json.dumps(payload))
 
 if __name__ == "__main__":
     main()

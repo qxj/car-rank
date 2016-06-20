@@ -12,6 +12,7 @@ from __future__ import division
 import sys
 import os
 import cmath
+import json
 
 g_ndcg_tolerance = float(os.getenv('ndcg_tolerance'))
 
@@ -76,14 +77,14 @@ def main():
         cols = line.strip().split('\t')
         qid, idx = cols[0].split(':')
         idx = int(idx)
-        label = cols[1]
+        data = json.loads(cols[1])
+        label = data['label']
         gain = label2gain(label)
-        score = float(cols[2])
-        # car_id = int(cols[3])
-        city_code = cols[4]
-        has_date = int(cols[5])
-        algo = cols[6]
-        if not last_info:
+        score = float(data['score'])
+        city_code = data['city_code']
+        has_date = int(data['has_date'])
+        algo = data['algo']
+        if last_info is None:
             last_info = (qid, city_code, has_date, algo)
         if last_info[0] != qid:
             deliver(last_info, rows)
