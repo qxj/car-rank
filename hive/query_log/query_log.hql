@@ -35,8 +35,13 @@ t_exp.quick_accept,
 t_exp.is_recommend,
 t_exp.station,
 t_exp.confirm_rate,
-t_exp.collect_cnt,
-t_exp.sales_label
+t_exp.collect_count,
+t_exp.sales_label,
+t_exp.is_collect,
+t_exp.lat,
+t_exp.lng,
+t_exp.proportion,
+t_exp.score
 FROM
     (
     SELECT
@@ -46,8 +51,14 @@ FROM
         `order_id`,
         IF(params['date_begin'] IS NOT NULL,1,0) has_date,
 
+        car['car_score'] score,
+
+        car['latitude'] lat,
+        car['longitude'] lng,
+
         car['distance'] distance,
         car['price_daily'] price,
+        car['proportion'] proportion,
         car['review'] review,
         car['review_cnt'] review_cnt,
         IF(car['auto_accept']='YES',1,0) auto_accept,
@@ -56,7 +67,8 @@ FROM
         car['station_name'] station,
         car['confirmed_rate_app'] confirm_rate,
 
-        car['collect_cnt'] collect_cnt,
+        car['collect_count'] collect_count,
+        car['is_collect'] is_collect,
         car['sales_label'] sales_label,
 
         params['page'] page,
@@ -70,7 +82,7 @@ FROM
     FROM
         php_svr_log LATERAL VIEW POSEXPLODE(search1) t AS pos, car
     WHERE ds=${hiveconf:datestr}
-        AND uri RLIKE '/vehicle\\.search'
+        AND uri='/vehicle.search'
         AND search1 IS NOT NULL
         AND user_id IS NOT NULL
         AND city_code IS NOT NULL
@@ -86,7 +98,7 @@ CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
 FROM
 php_svr_log
 WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.info'
+AND uri='/vehicle.info'
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 AND car_id IS NOT NULL
 ) t_click ON t_click.qcid=t_exp.qcid
@@ -98,7 +110,7 @@ SELECT
         IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
-AND (uri RLIKE '/order\\.precheck' OR uri RLIKE '/order\\.submit_precheck')
+AND uri IN ('/order.precheck', '/order.submit_precheck')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 AND (params['car_id'] IS NOT NULL OR car_id IS NOT NULL)
 ) t_precheck ON t_precheck.qcid=t_exp.qcid
@@ -110,7 +122,7 @@ CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
 order_id
 FROM php_svr_log
 WHERE ds=${hiveconf:datestr}
-AND (uri RLIKE '/order\\.new' OR uri RLIKE '/order\\.create')
+AND uri IN ('/order.new', '/order.create')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
 AND car_id IS NOT NULL
 ) t_order ON t_order.qcid=t_exp.qcid;

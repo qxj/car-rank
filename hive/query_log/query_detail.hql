@@ -81,7 +81,7 @@ FROM
     FROM
         php_svr_log
     WHERE ds=${hiveconf:datestr}
-        AND uri RLIKE '/vehicle\\.search'
+        AND uri='/vehicle.search'
         AND params IS NOT NULL
         AND user_id IS NOT NULL
         ) q
@@ -94,6 +94,6 @@ FROM
     FROM
         php_svr_log
     WHERE ds=${hiveconf:datestr}
-        AND (uri RLIKE '/order\\.create' OR uri RLIKE '/order\\.new')
+        AND (uri='/order.create' OR uri='/order.new')
         AND (params IS NOT NULL AND params['query_id'] IS NOT NULL)
         ) o ON q.qid=o.qid;
