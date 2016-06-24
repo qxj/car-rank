@@ -20,8 +20,13 @@ CREATE EXTERNAL TABLE rank.corpus (
         is_recommend TINYINT,
         station INT,
         confirm_rate INT,
-        collect_cnt INT,
-        sales_label INT
+        collect_count INT,
+        sales_label INT,
+        is_collect TINYINT,
+        lat DOUBLE,
+        lng DOUBLE,
+        proportion FLOAT,
+        score FLOAT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED

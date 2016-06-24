@@ -172,6 +172,7 @@ def main():
             "algo": data['algo'],
             "distance": distance,
             "score": score,
+            "rank_score": data['score'],
         }
 
         print '%s:%.10d\t%s' % (qid, idx, json.dumps(payload))

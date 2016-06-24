@@ -22,8 +22,13 @@ CREATE EXTERNAL TABLE rank.query_log (
         is_recommend TINYINT,
         station STRING,
         confirm_rate INT,
-        collect_cnt INT,
-        sales_label STRING
+        collect_count INT,
+        sales_label STRING,
+        is_collect TINYINT,
+        lat DOUBLE,
+        lng DOUBLE,
+        proportion FLOAT,
+        score FLOAT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED
