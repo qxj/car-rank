@@ -41,7 +41,7 @@ t_exp.is_collect,
 t_exp.lat,
 t_exp.lng,
 t_exp.proportion,
-t_exp.score
+t_exp.car_score
 FROM
     (
     SELECT
@@ -51,7 +51,7 @@ FROM
         `order_id`,
         IF(params['date_begin'] IS NOT NULL,1,0) has_date,
 
-        car['car_score'] score,
+        car['car_score'] car_score,
 
         car['latitude'] lat,
         car['longitude'] lng,

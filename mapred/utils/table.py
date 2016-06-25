@@ -59,7 +59,9 @@ class TableMeta(object):
         '''
         toRow = []
         for f, _ in self._fields:
-            v = fromRow.get(f, default)
+            v = fromRow.get(f)
+            if v is None:
+                v = default
             if process_fn:
                 v = process_fn(f, v)
             toRow.append(v)

@@ -28,7 +28,7 @@ CREATE EXTERNAL TABLE rank.query_log (
         lat DOUBLE,
         lng DOUBLE,
         proportion FLOAT,
-        score FLOAT
+        car_score FLOAT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED

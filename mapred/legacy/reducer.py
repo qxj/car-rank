@@ -14,7 +14,7 @@ import os
 import cmath
 import json
 
-g_ndcg_tolerance = float(os.getenv('ndcg_tolerance'))
+g_ndcg_tolerance = float(os.getenv('ndcg_tolerance', 0.01))
 
 
 def label2gain(label):
@@ -56,6 +56,9 @@ def deliver(info, rows):
         gain = row[2]
         # idcg(i)
         dn += gain / cmath.log(i + 2, 2).real
+    if dn == 0:
+        sys.stderr.write("reporter:counter:My Counters,OOPS! Zero divisor,1\n")
+        return
     # dcg = \sum_{i=1}^N dcg(i)
     ndcg1 = d1 / dn
     # apply new score
@@ -72,6 +75,7 @@ def deliver(info, rows):
 
 def main():
     last_info = None
+    decay_qid = None
     rows = []
     for line in sys.stdin:
         cols = line.strip().split('\t')
@@ -85,11 +89,18 @@ def main():
         has_date = int(data['has_date'])
         algo = data['algo']
         if last_info is None:
+            if idx != 0:
+                decay_qid = qid
             last_info = (qid, city_code, has_date, algo)
         if last_info[0] != qid:
             deliver(last_info, rows)
+            if idx != 0:
+                decay_qid = qid
             last_info = (qid, city_code, has_date, algo)
             rows = []
+        if decay_qid == qid:
+            sys.stderr.write("reporter:counter:My Counters,Decayed Lines,1\n")
+            continue
         row = (qid, idx, gain, score)
         rows.append(row)
     if last_info is not None:

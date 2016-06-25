@@ -7,5 +7,7 @@
 # @created   2016-06-17 18:33:08
 #
 
+cd $(dirname $0)
+
 zip -r utils.zip utils
 mv utils.zip utils.mod

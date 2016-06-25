@@ -25,6 +25,7 @@ sync_log01()
 
 case $1 in
     relay)
+        ./mapred/mk_mod.sh
         sync_relay deploy.sh ""
         sync_relay mapred/ mapred
         sync_relay hive/ hive

@@ -84,14 +84,6 @@ def calc_score(row):
         scores['w_recommend'] = 7.5
     elif recommend_level < 0:
         scores['w_recommend'] = -20
-    # send car
-    scores['w_send'] = 0
-    if row['owner_send'] and row['owner_send_desc_len'] > 15:
-        scores['w_send'] = 5
-    if row['owner_send_has_tags']:
-        scores['w_send'] += 10
-    if row['owner_send_distance'] >= 5:
-        scores['w_send'] += 5
     # manual
     scores['w_manual'] = row['manual_weight']
     # punish
@@ -120,7 +112,14 @@ def calc_score(row):
     #     rows[k] = round(v, 2)
     rows['quality'] = round(car_score, 2)
     rows['car_id'] = row['car_id']
-    rows['send_score'] = scores['w_send']
+    # distance
+    rows['w_send'] = 0
+    if row['owner_send'] and row['owner_send_desc_len'] > 15:
+        rows['w_send'] = 0.5
+    if row['owner_send_has_tags']:
+        rows['w_send'] += 1
+    if row['owner_send_distance'] >= 5:
+        rows['w_send'] += 0.5
     return rows
 
 
@@ -152,7 +151,7 @@ def main():
 
         rets = calc_score(data)
         quality = rets['quality']
-        send_score = rets['send_score']
+        send_score = rets['w_send']
         d1, d2, d3 = discrete_distance(distance)
 
         if quality < 0 or quality > 100:
@@ -162,7 +161,8 @@ def main():
             "reporter:counter:My Counters,Processed Rows,1\n")
 
         # score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
-        score = quality - 7 * (distance - send_score)
+        # score = quality - 7 * (distance - send_score)
+        score = quality + 16 * (3 + send_score - distance)
 
         payload = {
             "car_id": data['car_id'],
@@ -172,8 +172,14 @@ def main():
             "algo": data['algo'],
             "distance": distance,
             "score": score,
-            "rank_score": data['score'],
+            "w_send": send_score,
+            "quality": quality,
+            "car_score": data['car_score'],
         }
+
+        if data['car_score'] is None:
+            sys.stderr.write("reporter:counter:My Counters,No car_score,1\n")
+            continue
 
         print '%s:%.10d\t%s' % (qid, idx, json.dumps(payload))
 

@@ -101,14 +101,6 @@ class RankLegacy(IntervalDb):
             scores['w_recommend'] = 7.5
         elif recommend_level < 0:
             scores['w_recommend'] = -20
-        # send car
-        scores['w_send'] = 0
-        if row['owner_send'] and row['owner_send_desc_len'] > 15:
-            scores['w_send'] = 5
-        if row['owner_send_has_tags']:
-            scores['w_send'] += 10
-        if row['owner_send_distance'] >= 5:
-            scores['w_send'] += 5
         # manual
         scores['w_manual'] = row['manual_weight']
         # punish

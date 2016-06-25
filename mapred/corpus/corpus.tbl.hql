@@ -26,7 +26,7 @@ CREATE EXTERNAL TABLE rank.corpus (
         lat DOUBLE,
         lng DOUBLE,
         proportion FLOAT,
-        score FLOAT
+        car_score FLOAT
         )
     PARTITIONED BY (ds STRING)
     ROW FORMAT DELIMITED
