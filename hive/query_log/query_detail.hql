@@ -79,7 +79,7 @@ FROM
         params['query_id'] query_id,
         visit_time
     FROM
-        php_svr_log
+        db.php_svr_log
     WHERE ds=${hiveconf:datestr}
         AND uri='/vehicle.search'
         AND params IS NOT NULL
@@ -92,7 +92,7 @@ FROM
         `order_id`,
         car_id
     FROM
-        php_svr_log
+        db.php_svr_log
     WHERE ds=${hiveconf:datestr}
         AND (uri='/order.create' OR uri='/order.new')
         AND (params IS NOT NULL AND params['query_id'] IS NOT NULL)

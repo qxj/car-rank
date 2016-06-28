@@ -4,7 +4,7 @@ ADD JAR /home/work/udf.jar;
 -- CREATE FUNCTION ppzc_decode AS 'udf.PpzcDecode';
 
 
--- NOTE: this hql will fail when process php_svr_log before 20151225, because
+-- NOTE: this hql will fail when process db.php_svr_log before 20151225, because
 -- distance is missing.
 
 -- NOTE: this hql is expired after 20160616, because add the search1 field to instead of
@@ -51,7 +51,7 @@ CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id,
 CONCAT(user_id, '_', params['query_id'], '_', expo_car_id) qcid,
 ds
 FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.result) t AS pos, expo_car_id
+db.php_svr_log LATERAL VIEW POSEXPLODE(search.result) t AS pos, expo_car_id
 WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.search'
 AND search IS NOT NULL
@@ -65,7 +65,7 @@ SELECT
 distance,
 CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id
 FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.distance) t AS pos, distance
+db.php_svr_log LATERAL VIEW POSEXPLODE(search.distance) t AS pos, distance
 WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.search'
 AND search IS NOT NULL
@@ -78,7 +78,7 @@ LEFT JOIN
 SELECT
 CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
 FROM
-php_svr_log
+db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND uri RLIKE '/vehicle\\.info'
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
@@ -90,7 +90,7 @@ LEFT JOIN
 SELECT
     CONCAT(user_id, '_', params['query_id'], '_',
         IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
-FROM php_svr_log
+FROM db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND (uri RLIKE '/order\\.precheck' OR uri RLIKE '/order\\.submit_precheck')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
@@ -102,7 +102,7 @@ LEFT JOIN
 SELECT
 CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
 order_id
-FROM php_svr_log
+FROM db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND (uri RLIKE '/order\\.new' OR uri RLIKE '/order\\.create')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")

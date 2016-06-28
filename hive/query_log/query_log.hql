@@ -4,7 +4,7 @@ ADD JAR /home/work/udf.jar;
 -- CREATE FUNCTION ppzc_decode AS 'udf.PpzcDecode';
 
 
--- NOTE: this hql will fail when process php_svr_log before 20151225, because
+-- NOTE: this hql will fail when process db.php_svr_log before 20151225, because
 -- distance is missing
 
 INSERT OVERWRITE TABLE rank.query_log
@@ -80,7 +80,7 @@ FROM
         CONCAT(user_id, '_', params['query_id'], '_', car['id']) qcid,
         ds
     FROM
-        php_svr_log LATERAL VIEW POSEXPLODE(search1) t AS pos, car
+        db.php_svr_log LATERAL VIEW POSEXPLODE(search1) t AS pos, car
     WHERE ds=${hiveconf:datestr}
         AND uri='/vehicle.search'
         AND search1 IS NOT NULL
@@ -96,7 +96,7 @@ LEFT JOIN
 SELECT
 CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
 FROM
-php_svr_log
+db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND uri='/vehicle.info'
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
@@ -108,7 +108,7 @@ LEFT JOIN
 SELECT
     CONCAT(user_id, '_', params['query_id'], '_',
         IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
-FROM php_svr_log
+FROM db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND uri IN ('/order.precheck', '/order.submit_precheck')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
@@ -120,7 +120,7 @@ LEFT JOIN
 SELECT
 CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
 order_id
-FROM php_svr_log
+FROM db.php_svr_log
 WHERE ds=${hiveconf:datestr}
 AND uri IN ('/order.new', '/order.create')
 AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
