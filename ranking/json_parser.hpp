@@ -25,6 +25,8 @@ class JsonParser
   void parse_request(const std::string&, JsonRequest&) noexcept(false);
   int reply_string(const JsonReply&, std::string&);
  private:
+  void parse_query(const std::string&, Query&) noexcept(false);
+ private:
   rapidjson::Document doc_;
 };
 

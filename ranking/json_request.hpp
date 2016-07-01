@@ -52,11 +52,21 @@ struct CarInfo
   }
 };
 
+struct Query
+{
+  int price0;
+  int price1;
+  double lng;
+  double lat;
+};
+
 struct JsonRequest
 {
   std::string algo;
   int user_id;
   bool debug{false};
+
+  Query query;
 
   typedef std::vector<CarInfo> CarsType;
   CarsType cars;

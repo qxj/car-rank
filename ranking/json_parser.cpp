@@ -21,6 +21,13 @@ using namespace rapidjson;
 using namespace ranking;
 
 void
+JsonParser::parse_query(const std::string& query_string,
+                        Query& query)
+{
+
+}
+
+void
 JsonParser::parse_request(const std::string& json_string,
         JsonRequest& json_request)
 {
@@ -36,6 +43,16 @@ JsonParser::parse_request(const std::string& json_string,
     if (itr != doc_.MemberEnd()) {
       if (!itr->value.IsString()) {
         throw std::invalid_argument("algo is not a string");
+      }
+      parse_query(itr->value.GetString(), json_request.query);
+    }
+  }
+  // query string
+  {
+    Value::ConstMemberIterator itr = doc_.FindMember("query");
+    if (itr != doc_.MemberEnd()) {
+      if (!itr->value.IsString()) {
+        throw std::invalid_argument("query string is not a string");
       }
       json_request.algo = itr->value.GetString();
     }
