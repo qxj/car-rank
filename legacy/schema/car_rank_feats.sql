@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS `car_rank_feats`;
 CREATE TABLE `car_rank_feats` (
   `car_id` int(11) unsigned NOT NULL,
   `city_code` varchar(6) DEFAULT NULL,
+  `price_daily` int(11) DEFAULT '0' COMMENT '车辆当前日租价',
   `suggest_price` float DEFAULT '0' COMMENT '基准价',
   `proportion` float DEFAULT '0' COMMENT 'car_owner_price.proportion',
   `price_tuning` float DEFAULT '0' COMMENT 'price_tools_rank.score',

@@ -133,13 +133,13 @@ class RankLegacy(IntervalDb):
 
     def update(self):
         sql = '''select avg(quality) quality_avg,
-        avg(quality*quality) - avg(quality)*avg(quality) quality_var
+        std(quality) quality_std
         from car_rank_legacy
         '''
         row = self.db.exec_sql(sql)[0]
         logger.info("based stats: %s", row)
         qavg = row["quality_avg"]
-        qvar = row["quality_var"]
+        qstd = row["quality_std"]
 
         # NOTE for performace, avg and var are deflected a little from the true
         # data
@@ -154,7 +154,7 @@ class RankLegacy(IntervalDb):
         for row in rows:
             data = self._calc_score(row)
             # z-score norm
-            data['norm_quality'] = (data['quality'] - qavg) / qvar
+            data['norm_quality'] = (data['quality'] - qavg) / qstd
             logger.debug('[rank] score: %s', data)
             written += self._write_score(data)
             if written % 100 == 0:

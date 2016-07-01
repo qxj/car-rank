@@ -123,6 +123,69 @@ def calc_score(row):
     return rows
 
 
+def calc_score1(row):
+    scores = {}
+    weights = {
+        # name: (weight, avg, std)
+        'price': (20, 196, 119),
+        'proportion': (10, 1.29235911, 0.37941131),
+        'price_tuning': (4, -16.2718, 37.12872),
+        'recent_accepted': (4, 0.8846, 2.4942),
+        'recent_rejected': (4, 0.1997, 0.67168),
+        'review_owner': (5, 0.4846, 1.47192),
+        'review_car': (5, 0.47938, 1.460302),
+    }
+    for name, v in weights.items():
+        scores[name] = v[0] * (row[name] - v[1]) / v[2]
+
+    # recommend
+    recommend_level = row['recommend_level']
+    scores['w_recommend'] = 0
+    if recommend_level > 10:
+        scores['w_recommend'] = 10
+    elif recommend_level > 0:
+        scores['w_recommend'] = 5
+    elif recommend_level < 0:
+        scores['w_recommend'] = -20
+    # manual
+    scores['w_manual'] = row['manual_weight']
+    # punish
+    punish = 0
+    days = 0
+    if row['verified_time']:
+        ddays = datetime.datetime.today() - row['verified_time']
+        days = ddays.days
+    if days > 30:
+        if row['pic_num'] < 2:
+            punish += 10
+        if row['desc_len'] < 50:
+            punish += 10
+    if row['recent_cancelled_owner']:
+        punish += 20
+    # recent_paid = row['recent_paid']
+    # recent_cancelled_renter = row['recent_cancelled_renter']
+    # if recent_paid > 0 and recent_cancelled_renter / recent_paid > 0.3:
+    #     punish += 20
+    scores['w_punish'] = -punish
+    # calc car score
+    car_score = reduce(lambda x, y: x + y, scores.itervalues())
+    # generate mysql row data
+    rows = {}
+    # for k, v in scores.items():
+    #     rows[k] = round(v, 2)
+    rows['quality'] = round(car_score, 2)
+    rows['car_id'] = row['car_id']
+    # distance
+    rows['w_send'] = 0
+    if row['owner_send'] and row['owner_send_desc_len'] > 15:
+        rows['w_send'] = 0.5
+    if row['owner_send_has_tags']:
+        rows['w_send'] += 1
+    if row['owner_send_distance'] >= 5:
+        rows['w_send'] += 0.5
+    return rows
+
+
 def discrete_distance(distance):
     d1, d2, d3 = 0, 0, 0
     if distance < 2:
@@ -149,7 +212,7 @@ def main():
                 "reporter:counter:My Counters,Unexcepted Distance,1\n")
             continue
 
-        rets = calc_score(data)
+        rets = calc_score1(data)
         quality = rets['quality']
         send_score = rets['w_send']
         d1, d2, d3 = discrete_distance(distance)
