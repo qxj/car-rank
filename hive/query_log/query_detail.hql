@@ -5,11 +5,12 @@ INSERT OVERWRITE TABLE rank.query_detail
     PARTITION (ds=${hiveconf:datestr})
 SELECT
     q.qid,
+    t.pages,
     algo,
     user_id,
     o.`order_id`,
     o.car_id,
-    visit_time,
+    t.visit_time,
     city_code,
     city,
     user_lat,
@@ -76,8 +77,7 @@ FROM
         params['pp_genre_id'] pp_genre_id,
         params['labels'] labels,
         params['sale_labels'] sales_labels,
-        params['query_id'] query_id,
-        visit_time
+        params['query_id'] query_id
     FROM
         db.php_svr_log
     WHERE ds=${hiveconf:datestr}
@@ -85,9 +85,23 @@ FROM
         AND params IS NOT NULL
         AND user_id IS NOT NULL
         ) q
+    JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id']) qid,
+        COUNT(1) pages,
+        MIN(visit_time) visit_time
+    FROM
+        db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri='/vehicle.search'
+        AND params IS NOT NULL
+        AND user_id IS NOT NULL
+    GROUP BY CONCAT(user_id, '_', params['query_id'])
+    ) t ON t.qid=q.qid
     LEFT JOIN
     (
-    SELECT  DISTINCT
+    SELECT
         CONCAT(user_id, '_', params['query_id']) qid,
         `order_id`,
         car_id

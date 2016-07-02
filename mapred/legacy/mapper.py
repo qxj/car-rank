@@ -192,8 +192,8 @@ def discrete_distance(distance):
         d1 = 1
     elif distance < 5:
         d2 = 1
-    elif distance < 20:
-        d3 = 1 - distance / 20
+    # elif distance < 20:
+    #     d3 = 1 - distance / 20
     return d1, d2, d3
 
 
@@ -212,7 +212,7 @@ def main():
                 "reporter:counter:My Counters,Unexcepted Distance,1\n")
             continue
 
-        rets = calc_score1(data)
+        rets = calc_score(data)
         quality = rets['quality']
         send_score = rets['w_send']
         d1, d2, d3 = discrete_distance(distance)
@@ -223,7 +223,7 @@ def main():
         sys.stderr.write(
             "reporter:counter:My Counters,Processed Rows,1\n")
 
-        # score = quality * 1 + d1 * 60 + d2 * 30 + d3 * 10
+        # score = quality * 1 + d1 * 60 + d2 * 10 + d3 * 10
         # score = quality - 7 * (distance - send_score)
         score = quality + 16 * (3 + send_score - distance)
 

@@ -1,6 +1,7 @@
 
 CREATE EXTERNAL TABLE rank.query_detail (
         qid STRING,
+        pages INT,
         algo STRING,
         user_id INT,
         `order_id` INT,
