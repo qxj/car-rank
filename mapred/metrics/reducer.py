@@ -41,7 +41,7 @@ def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
-    # skip, if more than 5 click per page
+    # skip, if too many clicks
     ctr = len(rows) / (rows[-1][0] + 1)
     if ctr > g_max_ctr:
         sys.stderr.write(
@@ -70,7 +70,7 @@ def process(rows, query):
     query.insert(2, ap_str)
     query.insert(3, ndcg_str)
     print "\t".join(query)
-    sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
+    sys.stderr.write("reporter:counter:My Counters,Metrics Counter,1\n")
 
 
 def main():

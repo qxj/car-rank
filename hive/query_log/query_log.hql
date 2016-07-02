@@ -8,40 +8,40 @@ ADD JAR /home/work/udf.jar;
 -- distance is missing
 
 INSERT OVERWRITE TABLE rank.query_log
-PARTITION (ds=${hiveconf:datestr})
+    PARTITION (ds=${hiveconf:datestr})
 SELECT
-DISTINCT
-t_exp.qid,
-t_exp.idx,
-CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
+    DISTINCT
+    t_exp.qid,
+    t_exp.idx,
+    CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
     WHEN t_precheck.qcid IS NOT NULL THEN 'precheck'
     WHEN t_click.qcid IS NOT NULL THEN 'click'
     ELSE 'impress' END AS label,
-t_exp.pos,
-t_exp.page,
-t_exp.city_code,
-t_exp.user_id,
-t_exp.car_id,
-t_order.order_id,
-t_exp.distance,
-t_exp.algo,
-t_exp.visit_time,
-t_exp.has_date,
-t_exp.price,
-t_exp.review,
-t_exp.review_cnt,
-t_exp.auto_accept,
-t_exp.quick_accept,
-t_exp.is_recommend,
-t_exp.station,
-t_exp.confirm_rate,
-t_exp.collect_count,
-t_exp.sales_label,
-t_exp.is_collect,
-t_exp.lat,
-t_exp.lng,
-t_exp.proportion,
-t_exp.car_score
+    t_exp.pos,
+    t_exp.page,
+    t_exp.city_code,
+    t_exp.user_id,
+    t_exp.car_id,
+    t_order.order_id,
+    t_exp.distance,
+    t_exp.algo,
+    t_exp.visit_time,
+    t_exp.has_date,
+    t_exp.price,
+    t_exp.review,
+    t_exp.review_cnt,
+    t_exp.auto_accept,
+    t_exp.quick_accept,
+    t_exp.is_recommend,
+    t_exp.station,
+    t_exp.confirm_rate,
+    t_exp.collect_count,
+    t_exp.sales_label,
+    t_exp.is_collect,
+    t_exp.lat,
+    t_exp.lng,
+    t_exp.proportion,
+    t_exp.car_score
 FROM
     (
     SELECT
@@ -91,41 +91,41 @@ FROM
         AND (car['distance'] IS NOT NULL AND car['distance'] != "null")
         ) t_exp
 
-LEFT JOIN
-(
-SELECT
-CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
-FROM
-db.php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri='/vehicle.info'
-AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
-AND car_id IS NOT NULL
-) t_click ON t_click.qcid=t_exp.qcid
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
+    FROM
+        db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri='/vehicle.info'
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND car_id IS NOT NULL
+        ) t_click ON t_click.qcid=t_exp.qcid
 
-LEFT JOIN
-(
-SELECT
-    CONCAT(user_id, '_', params['query_id'], '_',
-        IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
-FROM db.php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri IN ('/order.precheck', '/order.submit_precheck')
-AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
-AND (params['car_id'] IS NOT NULL OR car_id IS NOT NULL)
-) t_precheck ON t_precheck.qcid=t_exp.qcid
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_',
+            IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
+    FROM db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri IN ('/order.precheck', '/order.submit_precheck')
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND (params['car_id'] IS NOT NULL OR car_id IS NOT NULL)
+        ) t_precheck ON t_precheck.qcid=t_exp.qcid
 
-LEFT JOIN
-(
-SELECT
-CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
-order_id
-FROM db.php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri IN ('/order.new', '/order.create')
-AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
-AND car_id IS NOT NULL
-) t_order ON t_order.qcid=t_exp.qcid;
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
+    order_id
+    FROM db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri IN ('/order.new', '/order.create')
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND car_id IS NOT NULL
+        ) t_order ON t_order.qcid=t_exp.qcid;
 
 
 ALTER TABLE rank.query_log ADD IF NOT EXISTS PARTITION(ds=${hiveconf:datestr})

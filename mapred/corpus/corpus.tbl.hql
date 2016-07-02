@@ -4,6 +4,8 @@ CREATE EXTERNAL TABLE rank.corpus (
         qid STRING,
         idx INT,
         label STRING,
+        pos INT,
+        page INT,
         city_code STRING,
         user_id INT,
         car_id INT,

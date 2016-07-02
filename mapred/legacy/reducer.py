@@ -20,7 +20,7 @@ g_ndcg_tolerance = float(os.getenv('ndcg_tolerance', 0.01))
 def label2gain(label):
     gain = 0
     if label == "click":
-        gain = 1
+        gain = 2
     elif label == "precheck":
         gain = 7
     elif label == "order":
@@ -71,10 +71,12 @@ def deliver(info, rows):
     better = cmp_ndcg(ndcg1, ndcg2)
     print "%s\t%f\t%f\t%d\t%s\t%d\t%s" % (qid, ndcg1, ndcg2, better,
                                           city_code, has_date, algo)
+    sys.stderr.write("reporter:counter:My Counters,Metrics Counter,1\n")
 
 
 def main():
     last_info = None
+    # decay: some idx do not start from 0?
     decay_qid = None
     rows = []
     for line in sys.stdin:

@@ -24,19 +24,12 @@ g_max_ctr = float(os.getenv('max_ctr', 0.5))
 g_td = table.TableMeta('corpus.desc')
 
 
-def process(field, value):
-    if field == 'station':
-        if value and value != '\N':
-            return '1'
-        return '0'
-    return str(value)
-
-
 def print1(cols):
-    print '\t'.join(g_td.convert(cols, process_fn=process))
+    global g_td
+    print '\t'.join(g_td.convert(cols, process_fn=lambda _, x: str(x)))
 
 
-def deliver_rows(rows):
+def deliver_rows_strict(rows):
     has_neg = False
     for cols in rows:
         # visit_time
@@ -48,7 +41,8 @@ def deliver_rows(rows):
             pii = True
         if pii:
             print1(cols)
-            sys.stderr.write("reporter:counter:My Counters,Output Counter,1\n")
+            sys.stderr.write(
+                "reporter:counter:My Counters,Output Counter,1\n")
         else:
             sys.stderr.write(
                 "reporter:counter:My Counters,Discard-Head-Clicks,1\n")
@@ -72,7 +66,7 @@ def filter(clicked_len, clicked_cnt, rows):
                 "reporter:counter:My Counters,Skip Ctr>%f,1\n" % g_max_ctr)
             return
         if g_strict:
-            deliver_rows(rows)
+            deliver_rows_strict(rows)
         else:
             deliver_rows_all(rows)
             idx = rows[-1]['idx']

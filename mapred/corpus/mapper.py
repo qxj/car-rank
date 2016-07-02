@@ -46,6 +46,7 @@ def main():
         distance = row['distance']
         has_date = row['has_date']
         # TODO feature engineering
+        row['station'] = 1 if row['station'] else 0
         payload = json.dumps(row)
 
         if page > max_page:
