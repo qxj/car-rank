@@ -41,12 +41,13 @@ def process(rows, query):
     patks = 0.0
     d1 = 0.0
     d2 = 0.0
-    # skip, if too many clicks
-    ctr = len(rows) / (rows[-1][0] + 1)
-    if ctr > g_max_ctr:
-        sys.stderr.write(
-            "reporter:counter:My Counters,Skip CTR>%f,1\n" % g_max_ctr)
-        return
+    # TODO skip, if too many clicks
+    # FIXME the last doc is always clicked
+    # ctr = len(rows) / (rows[-1][0] + 1)
+    # if ctr > g_max_ctr:
+    #     sys.stderr.write(
+    #         "reporter:counter:My Counters,Skip CTR>%f,1\n" % g_max_ctr)
+    #     return
     row_max_gain = max(rows, key=lambda x: x[1])
     label = gain2label(row_max_gain[1])
     for i, (idx, gain) in enumerate(rows):

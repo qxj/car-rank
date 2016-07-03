@@ -14,9 +14,11 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
-hive -e "desc rank.query_log" > query_log.desc
+# hive -e "desc rank.query_log" > query_log.desc
+hive -e "desc rank.corpus" > query_log.desc
 
-input0="rank/query_log/ds=$day"
+
+input0="rank/corpus/ds=$day"
 
 input=$input0
 output="rank/metrics/ds=$day"
