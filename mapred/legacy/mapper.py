@@ -192,8 +192,8 @@ def discrete_distance(distance):
         d1 = 1
     elif distance < 5:
         d2 = 1
-    # elif distance < 20:
-    #     d3 = 1 - distance / 20
+    elif distance < 15:
+        d3 = 1 - distance / 15
     return d1, d2, d3
 
 
@@ -206,10 +206,14 @@ def main():
         qid = data['qid']
         idx = data['idx']
         distance = data['distance']
+        car_score = data['car_score']
 
         if distance is None:
             sys.stderr.write(
                 "reporter:counter:My Counters,Unexcepted Distance,1\n")
+            continue
+        if car_score is None:
+            sys.stderr.write("reporter:counter:My Counters,No car_score,1\n")
             continue
 
         rets = calc_score(data)
@@ -224,8 +228,12 @@ def main():
             "reporter:counter:My Counters,Processed Rows,1\n")
 
         # score = quality * 1 + d1 * 60 + d2 * 10 + d3 * 10
-        # score = quality - 7 * (distance - send_score)
-        score = quality + 16 * (3 + send_score - distance)
+        score = quality * 1 + d1 * 60 + d2 * 10 + d3 * 1
+        # score = quality + 16 * (3 + send_score - distance)
+        # if distance > 5:
+        #     score -= 10
+        # if distance > 10:
+        #     score -= 30
 
         payload = {
             "car_id": data['car_id'],
@@ -237,12 +245,19 @@ def main():
             "score": score,
             "w_send": send_score,
             "quality": quality,
-            "car_score": data['car_score'],
+            "car_score": car_score,
         }
 
-        if data['car_score'] is None:
-            sys.stderr.write("reporter:counter:My Counters,No car_score,1\n")
-            continue
+        diff = car_score - quality
+        if diff > 0.1:
+            sys.stderr.write(
+                "reporter:counter:My Counters,car_score>quality,1\n")
+        elif diff < -0.1:
+            sys.stderr.write(
+                "reporter:counter:My Counters,car_score<quality,1\n")
+        else:
+            sys.stderr.write(
+                "reporter:counter:My Counters,car_score=quality,1\n")
 
         print '%s:%.10d\t%s' % (qid, idx, json.dumps(payload))
 
