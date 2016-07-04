@@ -44,7 +44,7 @@ JsonParser::parse_request(const std::string& json_string,
       if (!itr->value.IsString()) {
         throw std::invalid_argument("algo is not a string");
       }
-      parse_query(itr->value.GetString(), json_request.query);
+      json_request.algo = itr->value.GetString();
     }
   }
   // query string
@@ -54,7 +54,7 @@ JsonParser::parse_request(const std::string& json_string,
       if (!itr->value.IsString()) {
         throw std::invalid_argument("query string is not a string");
       }
-      json_request.algo = itr->value.GetString();
+      parse_query(itr->value.GetString(), json_request.query);
     }
   }
   // user_id
