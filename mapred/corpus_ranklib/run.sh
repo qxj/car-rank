@@ -42,5 +42,8 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./reducer.py \
     -file ../utils.mod \
     -file ./corpus_rl.desc \
-    -file ./feats.desc \
+    -file ./feats.txt \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+
+rm -f corpus_rl.$day
+hadoop fs -get $output/part-00000 corpus_rl.$day

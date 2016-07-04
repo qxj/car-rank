@@ -33,7 +33,7 @@ def main():
     i = 1
     for line in open('feats.txt'):
         feats[line.strip()] = i
-        i+=1
+        i += 1
     for line in sys.stdin:
         cols = line.strip().split('\t')
         row = td.fields(cols)
@@ -44,8 +44,9 @@ def main():
         output.append("qid:" + row['qid'])
         for f, i in feats.items():
             output.append('%d:%s' % (i, row[f]))
-        payload = ' '.join(output)
-        print '%s:%d\t%s' % (qid, idx, payload)
+        output.append("# idx:%d" % idx)
+        payload = ' '.join([str(i) for i in output])
+        print '%s:%.10d\t%s' % (qid, idx, payload)
 
 if __name__ == "__main__":
     main()

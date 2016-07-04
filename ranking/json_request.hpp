@@ -39,16 +39,18 @@ struct CarInfo
         is_ordered(0), is_collected(0), is_model(0), is_price(0)
   {}
 
-  std::tuple<float, float, float> trans_distance() const {
-    float d1{0}, d2{0}, d3{0};
+  std::tuple<float, float, float, float> trans_distance() const {
+    float d1{0}, d2{0}, d3{0}, d4{0};
     if (distance < 2) {
-      d1 = 1;
+      d1 = - distance / 2;
     } else if (distance < 5) {
-      d2 = 1;
-    } else if (distance < 20) {
-      d3 = 1 - distance / 20;
+      d2 = - distance / 2;
+    } else if (distance < 12) {
+      d3 = - distance;
+    } else {
+      d4 = - distance * 2;
     }
-    return std::make_tuple(d1, d2, d3);
+    return std::make_tuple(d1, d2, d3, d4);
   }
 };
 

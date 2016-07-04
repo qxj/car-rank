@@ -1,6 +1,6 @@
 -- -*- mode: sql -*-
 
-DROP TABLE IF EXISTS temp.corpus_ranklib;
+DROP TABLE IF EXISTS temp.corpus_rl;
 
 CREATE TABLE temp.corpus_rl
 ROW FORMAT DELIMITED
@@ -15,7 +15,7 @@ c.car_id,
 c.idx,
 d.city_code,
 IF(d.date_begin IS NOT NULL,1,0) has_date,
-IF(d.reserve_price IS NOT NULL,SPLIT(d.reserve_price,',')[1],999) max_price,
+IF(CAST(SPLIT(d.reserve_price,',')[1] AS INT) IS NULL,999,SPLIT(d.reserve_price,',')[1]) max_price,
 c.price,
 c.distance,
 c.proportion,

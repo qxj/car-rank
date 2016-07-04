@@ -5,15 +5,20 @@
 #
 # @file      reducer.py
 # @author    Julian Qian <junist@gmail.com>
-# @created   2016-07-03 17:43:25
+# @created   2016-07-04 15:31:06
 #
 
 import sys
 
+
 def main():
     for line in sys.stdin:
         cols = line.strip().split('\t')
-        print cols[1]
+        if len(cols) == 2:
+            print cols[1]
+        else:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Unknown Error,1\n")
 
 if __name__ == "__main__":
     main()

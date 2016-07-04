@@ -24,6 +24,7 @@ class LegacyScore
     w_distance1  = ws.get_weight("distance1");
     w_distance2  = ws.get_weight("distance2");
     w_distance3  = ws.get_weight("distance3");
+    w_distance4  = ws.get_weight("distance4");
 
     w_preference = ws.get_weight("preference");
     w_collected  = ws.get_weight("collected");
@@ -34,12 +35,13 @@ class LegacyScore
 
   float score(const CarInfo& ci)
   {
-    float d1, d2, d3;
-    std::tie(d1, d2, d3) = ci.trans_distance();
+    float d1, d2, d3, d4;
+    std::tie(d1, d2, d3, d4) = ci.trans_distance();
 
     float s;
 
     s = w_quality * ci.quality + w_distance1 * d1 + w_distance2 * d2 + w_distance3 * d3 + \
+        w_distance4 * d4 + \
         w_preference * (w_collected * ci.is_collected + w_ordered * ci.is_ordered + \
                 w_model * ci.is_model + w_price * ci.is_price);
     return s;
@@ -49,6 +51,7 @@ class LegacyScore
   float w_distance1 ;
   float w_distance2 ;
   float w_distance3 ;
+  float w_distance4 ;
   float w_preference;
   float w_collected ;
   float w_ordered   ;
