@@ -3,6 +3,7 @@ CREATE EXTERNAL TABLE rank.query_detail (
         qid STRING,
         pages INT,
         algo STRING,
+        label STRING,
         user_id INT,
         `order_id` INT,
         car_id INT,

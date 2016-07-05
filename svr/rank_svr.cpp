@@ -47,10 +47,8 @@ RankSvr::legacy_handler(const http::server::request& req,
     ranking::JsonRequest jreq;
     ranking::JsonReply jrep;
     try {
-      parser_.parse_request(req.content, jreq);
-      LOG(INFO) << "json request algo " << jreq.algo
-                << ", user_id " << jreq.user_id
-                << ", totally " << jreq.cars.size() << " cars";
+      jreq << req.content;
+      LOG(INFO) << jreq;
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
@@ -62,7 +60,7 @@ RankSvr::legacy_handler(const http::server::request& req,
     }
 
     // TODO error handling
-    parser_.reply_string(jrep, rep.content);
+    jrep.assign(rep.content);
 
     try {
       cache_.set(std::to_string(reqid), rep.content);

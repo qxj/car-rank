@@ -2,34 +2,34 @@
 //
 // Copyright (C) 2016 Julian Qian
 //
-// @file      json_parser_test.cpp
+// @file      json_request_test.cpp
 // @author    Julian Qian <junist@gmail.com>
-// @created   2016-04-23 09:55:03
+// @created   2016-07-05 20:26:58
 //
 
 #include <iostream>
 #include <gtest/gtest.h>
 #include <glog/logging.h>
 
-#include "json_parser.hpp"
+#include "json_request.hpp"
 
 namespace
 {
 
-class JsonParserTest: public ::testing::Test
+class JsonRequestTest: public ::testing::Test
 {
  protected:
-  JsonParserTest() {}
-  virtual ~JsonParserTest() {}
+  JsonRequestTest() {}
+  virtual ~JsonRequestTest() {}
   virtual void SetUp()
   {
     // google::InitGoogleLogging("json_parser_test");
   }
  protected:
-  ranking::JsonParser parser;
+  ranking::JsonRequest parser;
 };
 
-TEST_F(JsonParserTest, json_to_request)
+TEST_F(JsonRequestTest, json_to_request)
 {
   std::string json = "{"
       "\"algo\": \"legacy\","
@@ -37,7 +37,9 @@ TEST_F(JsonParserTest, json_to_request)
       "\"distance\": [0.1,0.2,0.3,0.4],"
       "\"user_id\": 1234}";
   ranking::JsonRequest request;
-  parser.parse_request(json, request);
+
+  request << json;
+
   // TODO catch exception
   EXPECT_TRUE(request.algo == "legacy");
   // std::cerr << "Request algo " << request.algo << "\n";
@@ -45,7 +47,7 @@ TEST_F(JsonParserTest, json_to_request)
   EXPECT_EQ(4, request.cars.size());
 }
 
-TEST_F(JsonParserTest, reply_to_json)
+TEST_F(JsonRequestTest, reply_to_json)
 {
   ranking::JsonReply reply;
   reply.ret = -1;

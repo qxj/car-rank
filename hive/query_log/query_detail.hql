@@ -7,6 +7,10 @@ SELECT
     q.qid,
     t.pages,
     q.algo,
+    CASE WHEN o.qid IS NOT NULL THEN 'order'
+    WHEN p.qid IS NOT NULL THEN 'precheck'
+    WHEN i.qid IS NOT NULL THEN 'click'
+    ELSE 'impress' END label,
     q.user_id,
     o.`order_id`,
     o.car_id,
@@ -101,7 +105,27 @@ FROM
     ) t ON t.qid=q.qid
     LEFT JOIN
     (
-    SELECT
+    SELECT DISTINCT
+        CONCAT(user_id, '_', params['query_id']) qid
+    FROM
+        db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri='/vehicle.info'
+        AND (params IS NOT NULL AND params['query_id'] IS NOT NULL)
+        ) i on q.qid=i.qid
+    LEFT JOIN
+    (
+    SELECT DISTINCT
+        CONCAT(user_id, '_', params['query_id']) qid
+    FROM
+        db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND (uri='/order.precheck' OR uri='/order.submit_precheck')
+        AND (params IS NOT NULL AND params['query_id'] IS NOT NULL)
+        ) p on q.qid=p.qid
+    LEFT JOIN
+    (
+    SELECT DISTINCT
         CONCAT(user_id, '_', params['query_id']) qid,
         `order_id`,
         car_id
@@ -110,4 +134,4 @@ FROM
     WHERE ds=${hiveconf:datestr}
         AND (uri='/order.create' OR uri='/order.new')
         AND (params IS NOT NULL AND params['query_id'] IS NOT NULL)
-        ) o ON q.qid=o.qid;
+        ) o ON q.qid=o.qid

@@ -2,9 +2,9 @@
 //
 // Copyright (C) 2016 Julian Qian
 //
-// @file      json_parser.cpp
+// @file      json_request.cpp
 // @author    Julian Qian <junist@gmail.com>
-// @created   2016-04-28 04:20:38
+// @created   2016-07-05 19:42:24
 //
 
 #include <stdexcept>
@@ -12,76 +12,77 @@
 #include <glog/logging.h>
 
 #include "rapidjson/document.h"
+#include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
-#include "json_parser.hpp"
+#include "json_request.hpp"
 
 using namespace rapidjson;
-using namespace ranking;
-
-void
-JsonParser::parse_query(const std::string& query_string,
-                        Query& query)
+namespace ranking
 {
 
+Query&
+Query::operator<<(const std::string& s)
+{
+  return *this;
 }
 
-void
-JsonParser::parse_request(const std::string& json_string,
-        JsonRequest& json_request)
+JsonRequest&
+JsonRequest::operator<<(const std::string& json_string)
 {
-  doc_.Parse(json_string);
+  Document doc;
+  doc.Parse(json_string);
 
-  if (!doc_.IsObject()) {
+  if (!doc.IsObject()) {
     throw std::invalid_argument("post data is invalid, expected json string");
   }
 
   // algo
   {
-    Value::ConstMemberIterator itr = doc_.FindMember("algo");
-    if (itr != doc_.MemberEnd()) {
+    Value::ConstMemberIterator itr = doc.FindMember("algo");
+    if (itr != doc.MemberEnd()) {
       if (!itr->value.IsString()) {
         throw std::invalid_argument("algo is not a string");
       }
-      json_request.algo = itr->value.GetString();
+      this->algo = itr->value.GetString();
     }
   }
   // query string
   {
-    Value::ConstMemberIterator itr = doc_.FindMember("query");
-    if (itr != doc_.MemberEnd()) {
+    Value::ConstMemberIterator itr = doc.FindMember("query");
+    if (itr != doc.MemberEnd()) {
       if (!itr->value.IsString()) {
         throw std::invalid_argument("query string is not a string");
       }
-      parse_query(itr->value.GetString(), json_request.query);
+      this->query << itr->value.GetString();
     }
   }
   // user_id
   {
-    Value::ConstMemberIterator itr = doc_.FindMember("user_id");
-    if (itr != doc_.MemberEnd()) {
+    Value::ConstMemberIterator itr = doc.FindMember("user_id");
+    if (itr != doc.MemberEnd()) {
       if (!itr->value.IsInt()) {
         throw std::invalid_argument("user_id is not a integer");
       }
-      json_request.user_id = itr->value.GetInt();
+      this->user_id = itr->value.GetInt();
     }
   }
   // debug
   {
-    Value::ConstMemberIterator itr = doc_.FindMember("debug");
-    if (itr != doc_.MemberEnd()) {
+    Value::ConstMemberIterator itr = doc.FindMember("debug");
+    if (itr != doc.MemberEnd()) {
       if (!itr->value.IsBool()) {
         throw std::invalid_argument("debug is not a bool");
       }
-      json_request.debug = itr->value.GetBool();
+      this->debug = itr->value.GetBool();
     }
   }
   // car_list is required
-  if (!doc_.HasMember("car_list")) {
+  if (!doc.HasMember("car_list")) {
     throw std::invalid_argument("car_list is required");
   }
-  const Value& car_ids = doc_["car_list"];
+  const Value& car_ids = doc["car_list"];
   if (!car_ids.IsArray()) {
     throw std::invalid_argument("car_list is wrong, expect array type");
   }
@@ -89,23 +90,23 @@ JsonParser::parse_request(const std::string& json_string,
   if (car_ids_len == 0) {
     throw std::invalid_argument("car_list is empty");
   }
-  Value::ConstMemberIterator disItr = doc_.FindMember("distance");
-  if (disItr != doc_.MemberEnd()) {
+  Value::ConstMemberIterator disItr = doc.FindMember("distance");
+  if (disItr != doc.MemberEnd()) {
     if (!disItr->value.IsArray()) {
       throw std::invalid_argument("distance should be array ");
     } else if (disItr->value.Size() != car_ids_len) {
       throw std::invalid_argument("car_list and distance length are unmatch ");
     }
   }
-  Value::ConstMemberIterator priceItr = doc_.FindMember("price");
-  if (priceItr != doc_.MemberEnd()) {
+  Value::ConstMemberIterator priceItr = doc.FindMember("price");
+  if (priceItr != doc.MemberEnd()) {
     if (!priceItr->value.IsArray()) {
       throw std::invalid_argument("price should be array ");
     } else if (priceItr->value.Size() != car_ids_len) {
       throw std::invalid_argument("car_list and price length are unmatch ");
     }
   }
-  auto& cars = json_request.cars;
+  auto& cars = this->cars;
   // TODO limit cars capacity
   constexpr size_t limit = 500;
   for (SizeType i=0; i < car_ids_len; i++) {
@@ -117,7 +118,7 @@ JsonParser::parse_request(const std::string& json_string,
     }
 
     float distance = 0;
-    if (disItr != doc_.MemberEnd()) {
+    if (disItr != doc.MemberEnd()) {
       if (disItr->value[i].IsNumber()) {
         distance = static_cast<float>(disItr->value[i].GetDouble());
       } else {
@@ -125,7 +126,7 @@ JsonParser::parse_request(const std::string& json_string,
       }
     }
     float price = 0;
-    if (priceItr != doc_.MemberEnd()) {
+    if (priceItr != doc.MemberEnd()) {
       if (priceItr->value[i].IsNumber()) {
         distance = static_cast<float>(priceItr->value[i].GetDouble());
       } else {
@@ -134,43 +135,55 @@ JsonParser::parse_request(const std::string& json_string,
     }
     cars.emplace_back(car_id, distance, price);
   }
+  return *this;
 }
 
-int
-JsonParser::reply_string(const JsonReply& reply, std::string& json_string)
+void
+JsonReply::assign(std::string& output)
 {
-  Document::AllocatorType& allocator = doc_.GetAllocator();
+  Document doc;
+  Document::AllocatorType& alloc = doc.GetAllocator();
+  // NOTE if re-use Document(doc) instead of Value(a), core dump when concurrent requests.
   Value o(kObjectType);
   {
-    Value ret(reply.ret);
-    o.AddMember("ret", ret, allocator);
-    if (reply.ret) {  // error message
+    Value ret(this->ret);
+    o.AddMember("ret", ret, alloc);
+    if (this->ret) {  // error message
       Value err_msg;
-      err_msg.SetString(reply.err_msg, allocator);
-      o.AddMember("err_msg", err_msg, allocator);
+      err_msg.SetString(this->err_msg, alloc);
+      o.AddMember("err_msg", err_msg, alloc);
     } else {
       Value car_list(kArrayType);
-      auto& car_ids = reply.car_ids;
+      auto& car_ids = this->car_ids;
       for (auto itr=car_ids.cbegin(); itr!=car_ids.cend(); itr++) {
         Value car_id(*itr);
-        car_list.PushBack(car_id, allocator);
+        car_list.PushBack(car_id, alloc);
       }
-      o.AddMember("car_list", car_list, allocator);
+      o.AddMember("car_list", car_list, alloc);
       // TODO for debug output
-      if (!reply.scores.empty()) {
+      if (!this->scores.empty()) {
         Value score_list(kArrayType);
-        auto& scores = reply.scores;
+        auto& scores = this->scores;
         for (auto& s: scores) {
           Value score(s);
-          score_list.PushBack(score, allocator);
+          score_list.PushBack(score, alloc);
         }
-        o.AddMember("score_list", score_list, allocator);
+        o.AddMember("score_list", score_list, alloc);
       }
     }
   }
   StringBuffer buffer;
   Writer<StringBuffer> writer(buffer);
   o.Accept(writer);
-  json_string.assign(buffer.GetString());
-  return 0;
+  output.assign(buffer.GetString());
+}
+
+}
+
+std::ostream& operator<<(std::ostream& os, const ranking::JsonRequest& jr)
+{
+  os << "[JsonRequest] algo " << jr.algo
+     << ", user_id " << jr.user_id
+     << ", cars num " << jr.cars.size();
+  return os;
 }

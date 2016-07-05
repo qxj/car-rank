@@ -10,7 +10,7 @@
 #ifndef JSON_REQUEST_HPP_
 #define JSON_REQUEST_HPP_
 
-#include <sstream>
+#include <iostream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -60,6 +60,9 @@ struct Query
   int price1;
   double lng;
   double lat;
+
+  friend std::ostream& operator<<(std::ostream&, const Query&) ;
+  Query& operator<<(const std::string&);
 };
 
 struct JsonRequest
@@ -75,13 +78,8 @@ struct JsonRequest
 
   JsonRequest() : algo("default") {}
 
-  std::string to_string() const {
-    std::ostringstream oss;
-    oss << "[JsonRequest] algo " << algo
-        << ", user_id " << user_id
-        << ", cars num " << cars.size();
-    return oss.str();
-  }
+  JsonRequest& operator<<(const std::string&) noexcept(false);
+
 };
 
 struct JsonReply
@@ -97,6 +95,8 @@ struct JsonReply
 
   JsonReply() : ret(0) {}
 
+  void assign(std::string&);
+
   void from_request(const JsonRequest& req) {
     for (const auto& car: req.cars) {
       car_ids.push_back(car.car_id);
@@ -105,5 +105,7 @@ struct JsonReply
 };
 
 }
+
+std::ostream& operator<<(std::ostream&, const ranking::JsonRequest&) ;
 
 #endif // JSON_REQUEST_HPP_

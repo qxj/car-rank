@@ -9,20 +9,25 @@
 #
 
 import argparse
+import collections
 import httplib
 import urlparse
 import json
 import random
 import threading
+import sys
 from timeit import default_timer as timer
+
+
+g_cntr = collections.Counter(timeout=0, requests=0, threads=0)
 
 
 class PressTest(threading.Thread):
 
-    def __init__(self, url, cnt=1000):
+    def __init__(self, url, cnt=1000, sim_pages=0):
         super(PressTest, self).__init__()
         self.url = url
-        self.data = self.get_data(random.randint(100, 500))
+        self.pages = sim_pages
         self.cnt = cnt
 
     def get_data(self, n):
@@ -30,26 +35,37 @@ class PressTest(threading.Thread):
         random.shuffle(car_list)
         pre_dis = range(n)
         random.shuffle(pre_dis)
-        self.data = {
+        price_list = range(n)
+        random.shuffle(price_list)
+        data = {
             "algo": "legacy",
             "car_list": car_list,
-            "distance": [float(i) / n for i in pre_dis],
-            "price": [i / 100.0 for i in range(1000)],
+            "distance": [round(float(i) / n * 10, 2) for i in pre_dis],
+            "price": price_list,
             "user_id": random.randint(10000, 100000)
         }
+        return data
 
     def log(self, msg):
         print "[%s] %s" % (self.getName(), msg)
 
     def run(self):
-        self.log("thread is starting")
+        global g_cntr
 
-        total_timeout = 0
+        self.log("thread is starting")
+        g_cntr['threads'] += 1
+
+        data = self.get_data(random.randint(100, 500))
+        pages = 0
 
         for i in range(self.cnt):
             uri = urlparse.urlparse(self.url)
 
-            request = json.dumps(self.data)
+            pages += 1
+            if self.pages > 0 and pages % self.pages == 0:
+                data = self.get_data(random.randint(100, 500))
+
+            request = json.dumps(data)
 
             # print uri.netloc, uri.path
             # print request
@@ -64,10 +80,12 @@ class PressTest(threading.Thread):
             conn.close()
 
             timeout = timer() - start
-            total_timeout += timeout
 
-        self.log("total %d requests, time cost %f, avg %f secs" % (
-            self.cnt, total_timeout, total_timeout / self.cnt))
+            g_cntr['timeout'] += timeout
+            g_cntr['requests'] += 1
+
+            if pages % 100 == 0:
+                sys.stderr.write('.')
 
 
 def main():
@@ -76,21 +94,31 @@ def main():
                         default="http://127.0.0.1:20164/legacy")
     parser.add_argument('--thr-num', type=int, default=20,
                         help='concurrent threads num')
-    parser.add_argument('--req-num', type=int, default=100,
+    parser.add_argument('--sim-pages', type=int, default=5,
+                        help='generate new data every some pages')
+    parser.add_argument('--req-num', type=int, default=1000,
                         help='request num per thread')
     parser.add_argument('--verbose', action='store_true',
                         help='print verbose log')
     args = parser.parse_args()
 
     threads = []
-    for i in range(args.thr_num):
-        threads.append(PressTest(args.url, args.req_num))
+    for _ in range(args.thr_num):
+        threads.append(PressTest(args.url, args.req_num, args.sim_pages))
     start = timer()
     for thr in threads:
         thr.start()
     for thr in threads:
         thr.join()
-    print timer() - start
+    g_cntr['actual_timeout'] = timer() - start
+
+    print ""
+    print "Total threads %d" % g_cntr['threads']
+    print "Total timeout %f " % g_cntr['actual_timeout']
+    print "Total requests %d" % g_cntr['requests']
+    print "Average request timeout %.2fms" % (g_cntr['timeout'] / g_cntr['requests'] * 1000)
+    print "QPS %f" % (g_cntr['requests'] / g_cntr['timeout'])
+    print ""
 
 if __name__ == "__main__":
     main()

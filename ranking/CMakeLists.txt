@@ -10,15 +10,15 @@ aux_source_directory(. RANKING_SRCS)
 
 add_library(ranking ${RANKING_SRCS})
 
-list(REMOVE_ITEM RANKING_SRCS json_parser_test.cpp)
+list(REMOVE_ITEM RANKING_SRCS json_request_test.cpp)
 
-add_executable(json_parser_test json_parser_test.cpp)
+add_executable(json_request_test json_request_test.cpp)
 
-target_link_libraries(json_parser_test
+target_link_libraries(json_request_test
   ranking
   ${GLOG_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${GTEST_LIBRARY}
   ${GTEST_MAIN_LIBRARY})
 
-add_test(json_parser_test json_parser_test)
+add_test(json_request_test json_request_test)
