@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+# -*- coding: utf-8; tab-width: 4; -*-
+#
+# Copyright (C) 2016 Julian Qian
+#
+# @file      mapper.py
+# @author    Julian Qian <junist@gmail.com>
+# @created   2016-03-30 08:21:09
+#
+
+
+# hive> desc query_log;
+# OK
+# qid                     string
+# pos                     int
+# page                    int
+# label                   string
+# city_code               string
+# user_id                 int
+# car_id                  int
+# order_id                int
+# distance                float
+
+import sys
+import os
+import json
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
+
+
+def main():
+    td = table.TableMeta('query_log.desc')
+    max_page = int(os.getenv('max_page', 20))
+    for line in sys.stdin:
+        cols = line.strip().split('\t')
+        row = td.fields(cols)
+        qid = row['qid']
+        pos = row['pos']        # [0,14]
+        page = row['page']      # [1,\inf)
+        idx = row['idx']
+        distance = row['distance']
+        # TODO feature engineering
+        row['station'] = 1 if row['station'] else 0
+        payload = json.dumps(row)
+
+        if page > max_page:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Skip >%d Pages,1\n" % max_page)
+            continue
+        if distance is None:
+            sys.stderr.write(
+                "reporter:counter:My Counters,Skip NoneType Distance,1\n")
+            continue
+        new_id = "%s:%.10d" % (qid, idx)
+        # OUTPUT: newid, label, city_code, user_id, car_id, distance
+        print new_id + "\t" + payload
+
+
+if __name__ == "__main__":
+    main()

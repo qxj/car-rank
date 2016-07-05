@@ -9,34 +9,47 @@
 #
 
 import sys
+import os
+
+import zipimport
+imp = zipimport.zipimporter('utils.mod')
+utils = imp.load_module('utils')
+from utils import table
 
 
 def main():
+    td = table.TableMeta('query_log.desc')
+    max_page = int(os.getenv('max_page', 20))
+
     for line in sys.stdin:
-        cols = line.strip().split()
-        qid = cols[0]
-        label = cols[1]
-        city_code = cols[2]
-        pos = int(cols[7])   # [0,14]
-        page = int(cols[8])  # [1,\inf)
-        algo = cols[9]
-        visit_time = cols[10]
-        if page > 5:
+        cols = line.strip().split('\t')
+        row = td.fields(cols)
+        qid = row['qid']
+        label = row['label']
+        city_code = row['city_code']
+        page = row['page']      # [1,\inf)
+        idx = row['idx']
+        algo = row['algo']
+        visit_time = row['visit_time']
+        if page > max_page:
             sys.stderr.write(
-                "reporter:counter:My Counters,Skip Trailing Pages,1\n")
+                "reporter:counter:My Counters,Skip >%dPages,1\n" % max_page)
             continue
-        # idx starts from zero
-        idx = (page - 1) * 15 + pos
         # only clicked items are required
         if label != "impress":
-            # gain = 2^label -1
-            gain = 3
-            if label == "order":
-                gain = 15
-            elif label == "precheck":
-                gain = 7
-            print "%s:%.10d\t%d\t%s\t%s\t%s" % (
-                qid, idx, gain, city_code, algo, visit_time)
+            if label == 'click':
+                sys.stderr.write("reporter:counter:My Counters,CV-Click,1\n")
+            elif label == 'precheck':
+                sys.stderr.write(
+                    "reporter:counter:My Counters,CV-Precheck,1\n")
+            elif label == 'order':
+                sys.stderr.write("reporter:counter:My Counters,CV-Order,1\n")
+            else:
+                sys.stderr.write("reporter:counter:My Counters,CV-Unknown,1\n")
+            print "%s:%.10d\t%s\t%s\t%s\t%s" % (
+                qid, idx, label, city_code, algo, visit_time)
+        else:
+            sys.stderr.write("reporter:counter:My Counters,Impressed,1\n")
 
 if __name__ == "__main__":
     main()

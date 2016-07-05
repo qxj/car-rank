@@ -4,24 +4,28 @@
 #
 # @file      run.sh
 # @author    Julian Qian <junist@gmail.com>
-# @created   2016-03-31 02:55:18
+# @created   2016-06-13 16:13:50
 #
 
-set -e
+set -e -o pipefail
 
 day=$(date +%Y%m%d -d "yesterday")
 if [[ -n $1 ]]; then
     day=$1
 fi
 
-# hive -e "desc rank.query_log" > query_log.desc
-hive -e "desc rank.corpus" > query_log.desc
+if [[ -z $DB_EXIST ]]; then
+    echo "Create temp.legacy in ds=$day ..."
 
+    hive -hiveconf datestr=$day -f temp.legacy.hql
 
-input0="rank/corpus/ds=$day"
+    hive -e "desc temp.legacy" > legacy.desc
+fi
+
+input0="/user/hive/temp/legacy"
 
 input=$input0
-output="rank/metrics/ds=$day"
+output="rank/legacy/ds=$day"
 
 echo -e "INPUT: $input\nOUTPUT: $output"
 
@@ -32,20 +36,18 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -D mapreduce.map.output.compress=true \
     -D mapreduce.map.output.compress.codec=org.apache.hadoop.io.compress.SnappyCodec \
     -D mapreduce.output.fileoutputformat.compress=false \
-    -D mapreduce.job.name="jqian:$output" \
+    -D mapreduce.job.name=jqian:corpus:$day \
     -D map.output.key.field.separator=: \
     -D mapreduce.partition.keypartitioner.options=-k1 \
-    -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner \
     -input $input \
     -output $output \
     -mapper mapper.py \
     -reducer reducer.py \
     -file ./mapper.py \
     -file ./reducer.py \
-    -file ./query_log.desc \
     -file ../utils.mod \
-    -cmdenv max_ctr=0.4 \
-    -cmdenv max_page=10
-
+    -file ./legacy.desc \
+    -cmdenv ndcg_tolerance=0.01 \
+    -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
 hive -hiveconf ds=$day -f add_part.hql

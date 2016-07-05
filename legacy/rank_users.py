@@ -65,7 +65,8 @@ class CarUsers(IntervalDb):
             if len(rows) > 0:
                 collected_cars = rows[0]['collected_cars']
             if collected_cars:
-                cars = set([int(i) for i in collected_cars.split(',')])
+                cars = set([int(i)
+                            for i in collected_cars.split(',') if i.isdigit()])
                 for i in updates:
                     if i > 0:
                         cars.add(i)

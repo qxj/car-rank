@@ -117,7 +117,11 @@ LegacyDb::fetch_scores(JsonRequest& req)
           for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
                it != decltype(it)(); ++it) {
             word = std::move(boost::copy_range<std::string>(*it));
-            collected_cars.insert(std::stoi(word));
+            try {
+              collected_cars.insert(std::stoi(word));
+            } catch (const std::invalid_argument& e) {
+              VLOG(100) << "Invalid collected car_id: " << word;
+            }
           }
         }
         {
@@ -127,7 +131,11 @@ LegacyDb::fetch_scores(JsonRequest& req)
           for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
                it != decltype(it)(); ++it) {
             word = std::move(boost::copy_range<std::string>(*it));
-            ordered_cars.insert(std::stoi(word));
+            try {
+              ordered_cars.insert(std::stoi(word));
+            } catch (const std::invalid_argument& e) {
+              VLOG(100) << "Invalid ordered car_id: " << word;
+            }
           }
         }
         {
@@ -137,7 +145,11 @@ LegacyDb::fetch_scores(JsonRequest& req)
           for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
                it != decltype(it)(); ++it) {
             word = std::move(boost::copy_range<std::string>(*it));
-            prefer_models.insert(std::stoi(word));
+            try {
+              prefer_models.insert(std::stoi(word));
+            } catch (const std::invalid_argument& e) {
+              VLOG(100) << "Invalid prefer model: " << word;
+            }
           }
         }
         {
@@ -149,6 +161,8 @@ LegacyDb::fetch_scores(JsonRequest& req)
               prefer_price.second = std::stoi(str.substr(pos+1));
             } catch (const std::out_of_range& e) {
               LOG(ERROR) << "failed to parse prefer_price " << str;
+            } catch (const std::invalid_argument& e) {
+              VLOG(100) << "Invalid price range: " << str;
             }
           }
         }
@@ -249,7 +263,7 @@ LegacyDb::fetch_algos(LegacyAlgo& algo)
         float weight = static_cast<float>(res->getDouble("weight"));
         algo.add_weight(algo_name, feat_name, weight);
 
-        VLOG(100) << "algo " << algo_name << ", feat " << feat_name
+        LOG(INFO) << "algo " << algo_name << ", feat " << feat_name
                   << ", weight " << weight;
       }
       LOG(INFO) << "loaded " << algo.size() << " algos, and "

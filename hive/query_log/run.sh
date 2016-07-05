@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @(#) run.sh  Time-stamp: <Julian Qian 2016-03-31 08:58:55>
+# @(#) run.sh  Time-stamp: <Julian Qian 2016-06-14 11:23:05>
 # Copyright 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: run.sh,v 0.1 2016-01-12 11:21:33 jqian Exp $
@@ -11,25 +11,13 @@ if [[ -z $day ]]; then
     day=$(date +%Y%m%d -d yesterday)
 fi
 
-# CREATE EXTERNAL TABLE IF NOT EXISTS query_log (
-# qid STRING,
-# label INT,
-# city_code STRING,
-# user_id INT,
-# car_id INT,
-# order_id INT,
-# distance FLOAT,
-# pos INT,
-# page INT,
-# visit_time STRING
-# )
-# PARTITIONED BY (ds STRING)
-# ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
-
-
 # SET hivevar:datestr=$datestr;
 
+if (($day>20160616)); then
+    hive -hiveconf datestr=$day -f query_log.hql
+else
+    echo "before 20160616, apply query_log_0616.hql"
+    hive -hiveconf datestr=$day -f query_log_0616.hql
+fi
 
-hive -hiveconf datestr=$day -f query_log.hql
-
-hive -hiveconf datestr=$day -f query_full_log.hql
+# hive -hiveconf datestr=$day -f query_full_log.hql

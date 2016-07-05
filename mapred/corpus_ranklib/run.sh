@@ -4,20 +4,25 @@
 #
 # @file      run.sh
 # @author    Julian Qian <junist@gmail.com>
-# @created   2016-03-30 08:32:54
+# @created   2016-07-03 16:52:49
 #
+
 
 day=$(date +%Y%m%d -d "yesterday")
 if [[ -n $1 ]]; then
     day=$1
 fi
 
-input0=query_log/ds=$day
+hive -hiveconf datestr=$day -f temp.corpus_rl.hql
+
+hive -e "desc temp.corpus_rl" > corpus_rl.desc
+
+input0="/user/hive/temp/corpus_rl"
 
 input=$input0
-output="rank/pointwise_corpus/ds=$day"
+output="rank/corpus_rl/ds=$day"
 
-echo "INPUT: $input\nOUTPUT: $output"
+echo -e "INPUT: $input\nOUTPUT: $output"
 
 hadoop fs -rm -r $output
 
@@ -26,7 +31,7 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -D mapreduce.map.output.compress=true \
     -D mapreduce.map.output.compress.codec=org.apache.hadoop.io.compress.SnappyCodec \
     -D mapreduce.output.fileoutputformat.compress=false \
-    -D mapreduce.job.name=jqian:pointwise_corpus:$day \
+    -D mapreduce.job.name=jqian:corpus:$day \
     -D map.output.key.field.separator=: \
     -D mapreduce.partition.keypartitioner.options=-k1 \
     -input $input \
@@ -35,6 +40,10 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -reducer reducer.py \
     -file ./mapper.py \
     -file ./reducer.py \
-    -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner 
+    -file ../utils.mod \
+    -file ./corpus_rl.desc \
+    -file ./feats.txt \
+    -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 
-
+rm -f corpus_rl.$day
+hadoop fs -get $output/part-00000 corpus_rl.$day

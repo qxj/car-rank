@@ -4,96 +4,129 @@ ADD JAR /home/work/udf.jar;
 -- CREATE FUNCTION ppzc_decode AS 'udf.PpzcDecode';
 
 
--- NOTE: this hql will fail when process php_svr_log before 20151225, because
+-- NOTE: this hql will fail when process db.php_svr_log before 20151225, because
 -- distance is missing
 
-INSERT OVERWRITE TABLE query_log
-PARTITION (ds=${hiveconf:datestr})
+INSERT OVERWRITE TABLE rank.query_log
+    PARTITION (ds=${hiveconf:datestr})
 SELECT
-DISTINCT
-t_exp.query_id,
-CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
+    DISTINCT
+    t_exp.qid,
+    t_exp.idx,
+    CASE WHEN t_order.qcid IS NOT NULL THEN 'order'
     WHEN t_precheck.qcid IS NOT NULL THEN 'precheck'
     WHEN t_click.qcid IS NOT NULL THEN 'click'
     ELSE 'impress' END AS label,
-t_exp.city_code,
-t_exp.user_id,
-t_exp.car_id,
-t_order.order_id,
-t_dis.distance,
-t_exp.pos,
-t_exp.page,
-t_exp.visit_time
+    t_exp.pos,
+    t_exp.page,
+    t_exp.city_code,
+    t_exp.user_id,
+    t_exp.car_id,
+    t_order.order_id,
+    t_exp.distance,
+    t_exp.algo,
+    t_exp.visit_time,
+    t_exp.has_date,
+    t_exp.price,
+    t_exp.review,
+    t_exp.review_cnt,
+    t_exp.auto_accept,
+    t_exp.quick_accept,
+    t_exp.is_recommend,
+    t_exp.station,
+    t_exp.confirm_rate,
+    t_exp.collect_count,
+    t_exp.sales_label,
+    t_exp.is_collect,
+    t_exp.lat,
+    t_exp.lng,
+    t_exp.proportion,
+    t_exp.car_score
 FROM
-(
-SELECT
-expo_car_id car_id,
-user_id,
-city_code,
-params['page'] page,
-pos,
-visit_time,
-CONCAT(user_id, '_', params['query_id']) query_id,
-CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id,
-CONCAT(user_id, '_', params['query_id'], '_', expo_car_id) qcid,
-ds
-FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.result) t AS pos, expo_car_id
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.search'
-AND search IS NOT NULL
-AND user_id IS NOT NULL
-AND params['query_id'] IS NOT NULL
-) t_exp
+    (
+    SELECT
+        city_code,
+        user_id,
+        car['id'] car_id,
+        `order_id`,
+        IF(params['date_begin'] IS NOT NULL,1,0) has_date,
 
-JOIN
-(
-SELECT
-distance,
-CONCAT(user_id, '_', params['query_id'], '_', params['page'], '_', pos) pos_id
-FROM
-php_svr_log LATERAL VIEW POSEXPLODE(search.distance) t AS pos, distance
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.search'
-AND search IS NOT NULL
-AND user_id IS NOT NULL
-AND params['query_id'] IS NOT NULL
-) t_dis ON t_exp.pos_id=t_dis.pos_id
+        car['car_score'] car_score,
 
-LEFT JOIN
-(
-SELECT
-CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
-FROM
-php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/vehicle\\.info'
-AND params['query_id'] IS NOT NULL
-AND car_id IS NOT NULL
-) t_click ON t_click.qcid=t_exp.qcid
+        car['latitude'] lat,
+        car['longitude'] lng,
 
-LEFT JOIN
-(
-SELECT
-CONCAT(user_id, '_', params['query_id'], '_', ppzc_decode(params['car_id'])) qcid
-FROM php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/order\\.precheck'
-AND params['query_id'] IS NOT NULL
-AND params['car_id'] IS NOT NULL
-) t_precheck ON t_precheck.qcid=t_exp.qcid
+        car['distance'] distance,
+        car['price_daily'] price,
+        car['proportion'] proportion,
+        car['review'] review,
+        car['review_cnt'] review_cnt,
+        IF(car['auto_accept']='YES',1,0) auto_accept,
+        IF(car['quick_accept']='YES',1,0) quick_accept,
+        IF(car['is_recommend'] IS NULL,0,1) is_recommend,
+        car['station_name'] station,
+        car['confirmed_rate_app'] confirm_rate,
 
-LEFT JOIN
-(
-SELECT
-CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
-order_id
-FROM php_svr_log
-WHERE ds=${hiveconf:datestr}
-AND uri RLIKE '/order\\.new'
-AND params['query_id'] IS NOT NULL
-) t_order ON t_order.qcid=t_exp.qcid;
+        car['collect_count'] collect_count,
+        car['is_collect'] is_collect,
+        car['sales_label'] sales_label,
+
+        params['page'] page,
+        pos,
+        ( (CAST(params['page'] AS INT) -1) * CAST(params['pagesize'] AS INT) + pos) idx,
+        IF(experiment IS NOT NULL, experiment['rank_algo'], NULL) algo,
+        visit_time,
+        CONCAT(user_id, '_', params['query_id']) qid,
+        CONCAT(user_id, '_', params['query_id'], '_', car['id']) qcid,
+        ds
+    FROM
+        db.php_svr_log LATERAL VIEW POSEXPLODE(search1) t AS pos, car
+    WHERE ds=${hiveconf:datestr}
+        AND uri='/vehicle.search'
+        AND search1 IS NOT NULL
+        AND user_id IS NOT NULL
+        AND city_code IS NOT NULL
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND (params['page'] IS NOT NULL AND params['pagesize'] IS NOT NULL)
+        AND (car['distance'] IS NOT NULL AND car['distance'] != "null")
+        ) t_exp
+
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid
+    FROM
+        db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri='/vehicle.info'
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND car_id IS NOT NULL
+        ) t_click ON t_click.qcid=t_exp.qcid
+
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_',
+            IF(car_id IS NOT NULL, car_id, ppzc_decode(params['car_id']))) qcid
+    FROM db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri IN ('/order.precheck', '/order.submit_precheck')
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND (params['car_id'] IS NOT NULL OR car_id IS NOT NULL)
+        ) t_precheck ON t_precheck.qcid=t_exp.qcid
+
+    LEFT JOIN
+    (
+    SELECT
+        CONCAT(user_id, '_', params['query_id'], '_', car_id) qcid,
+    order_id
+    FROM db.php_svr_log
+    WHERE ds=${hiveconf:datestr}
+        AND uri IN ('/order.new', '/order.create')
+        AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
+        AND car_id IS NOT NULL
+        ) t_order ON t_order.qcid=t_exp.qcid;
 
 
-ALTER TABLE query_log ADD IF NOT EXISTS PARTITION(ds=${hiveconf:datestr})
-LOCATION '/user/work/query_log/ds=${hiveconf:datestr}';
+ALTER TABLE rank.query_log ADD IF NOT EXISTS PARTITION(ds=${hiveconf:datestr})
+LOCATION '/user/work/rank/query_log/ds=${hiveconf:datestr}';

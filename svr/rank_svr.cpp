@@ -35,9 +35,9 @@ RankSvr::legacy_handler(const http::server::request& req,
   try {
     cached_content = cache_.get(std::to_string(reqid));
   } catch(const std::runtime_error& e) {
-    LOG(WARNING) << e.what();
+    LOG(WARNING) << "Runtime error: " << e.what();
   } catch(const std::invalid_argument& e) {
-    VLOG(100) << e.what();
+    VLOG(100) << "Invalid args: " << e.what();
   }
 
   VLOG(100) << "request content " << req.content;
@@ -47,7 +47,8 @@ RankSvr::legacy_handler(const http::server::request& req,
     ranking::JsonRequest jreq;
     ranking::JsonReply jrep;
     try {
-      parser_.parse_request(req.content, jreq);
+      jreq << req.content;
+      LOG(INFO) << jreq;
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
@@ -59,7 +60,7 @@ RankSvr::legacy_handler(const http::server::request& req,
     }
 
     // TODO error handling
-    parser_.reply_string(jrep, rep.content);
+    jrep.assign(rep.content);
 
     try {
       cache_.set(std::to_string(reqid), rep.content);
