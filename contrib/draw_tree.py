@@ -20,7 +20,12 @@ import xml.etree.ElementTree
 import sys
 
 xmlFile = sys.argv[1]
-ensemble = xml.etree.ElementTree.parse(xmlFile).getroot()
+lines = []
+with open(xmlFile) as fp:
+    for line in fp:
+        if not line.startswith('#'):
+            lines.append(line)
+ensemble = xml.etree.ElementTree.fromstringlist(lines)
 
 
 class Node(object):
