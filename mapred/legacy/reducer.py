@@ -43,29 +43,28 @@ def cmp_ndcg(ndcg1, ndcg2):
 
 # qid for debug
 def deliver(info, rows):
+    if len(rows) == 0:
+        sys.stderr.write("reporter:counter:My Counters,Empty Rows?,1\n")
+        return
     qid, city_code, has_date, algo = info
     d1 = 0
     dn = 0
-    for i, row in enumerate(rows):
-        idx = row[1]
-        gain = row[2]
+    for i, (idx, gain, _) in enumerate(rows):
+        if i != idx:
+            sys.stderr.write("reporter:counter:My Counters,Missing Index?,1\n")
+            return
         # dcg(i) = gain_i / discount_i
         d1 += gain / cmath.log(idx + 2, 2).real
-    for i, row in enumerate(sorted(
-            rows, key=lambda x: x[2], reverse=True)):
-        gain = row[2]
+    for i, (_, gain, _) in enumerate(sorted(
+            rows, key=lambda x: x[1], reverse=True)):
         # idcg(i)
         dn += gain / cmath.log(i + 2, 2).real
-    if dn == 0:
-        sys.stderr.write("reporter:counter:My Counters,OOPS! Zero divisor,1\n")
-        return
     # dcg = \sum_{i=1}^N dcg(i)
     ndcg1 = d1 / dn
     # apply new score
     d2 = 0
-    for i, row in enumerate(sorted(
-            rows, key=lambda x: x[3], reverse=True)):
-        gain = row[2]
+    for i, (_, gain, _) in enumerate(sorted(
+            rows, key=lambda x: x[2], reverse=True)):
         d2 += gain / cmath.log(i + 2, 2).real
     ndcg2 = d2 / dn
     better = cmp_ndcg(ndcg1, ndcg2)
@@ -76,8 +75,6 @@ def deliver(info, rows):
 
 def main():
     last_info = None
-    # decay: some idx do not start from 0?
-    decay_qid = None
     rows = []
     for line in sys.stdin:
         cols = line.strip().split('\t')
@@ -91,19 +88,12 @@ def main():
         has_date = int(data['has_date'])
         algo = data['algo']
         if last_info is None:
-            if idx != 0:
-                decay_qid = qid
             last_info = (qid, city_code, has_date, algo)
         if last_info[0] != qid:
             deliver(last_info, rows)
-            if idx != 0:
-                decay_qid = qid
             last_info = (qid, city_code, has_date, algo)
             rows = []
-        if decay_qid == qid:
-            sys.stderr.write("reporter:counter:My Counters,Decayed Lines,1\n")
-            continue
-        row = (qid, idx, gain, score)
+        row = (idx, gain, score)
         rows.append(row)
     if last_info is not None:
         deliver(last_info, rows)
