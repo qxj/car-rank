@@ -13,12 +13,14 @@ if [[ -n $1 ]]; then
     day=$1
 fi
 
-hive -e "desc rank.corpus" > corpus.desc
+hive -hiveconf datestr=$day -f temp.corpus_rl.hql
 
-input0="rank/corpus/ds=$day"
+hive -e "desc temp.corpus_rl" > corpus_rl.desc
+
+input0="/user/hive/temp/corpus_rl"
 
 input=$input0
-output="rank/corpus_ranklib/ds=$day"
+output="rank/corpus_rl/ds=$day"
 
 echo -e "INPUT: $input\nOUTPUT: $output"
 
@@ -39,9 +41,6 @@ hadoop jar /mnt/cloudera/parcels/CDH/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -file ./mapper.py \
     -file ./reducer.py \
     -file ../utils.mod \
-    -file ./corpus.desc \
-    -cmdenv max_page=10 \
-    -cmdenv max_ctr=0.4 \
+    -file ./corpus_rl.desc \
+    -file ./feats.desc \
     -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
-
-hive -hiveconf ds=$day -f add_part.hql

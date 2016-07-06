@@ -63,7 +63,7 @@ FROM
         car['review_cnt'] review_cnt,
         IF(car['auto_accept']='YES',1,0) auto_accept,
         IF(car['quick_accept']='YES',1,0) quick_accept,
-        car['is_recommend'] is_recommend,
+        IF(car['is_recommend'] IS NULL,0,1) is_recommend,
         car['station_name'] station,
         car['confirmed_rate_app'] confirm_rate,
 

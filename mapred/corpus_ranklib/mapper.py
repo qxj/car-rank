@@ -28,14 +28,24 @@ def label2gain(label):
 
 
 def main():
-    td = table.TableMeta('corpus.desc')
+    td = table.TableMeta('corpus_rl.desc')
+    feats = {}
+    i = 1
+    for line in open('feats.txt'):
+        feats[line.strip()] = i
+        i+=1
     for line in sys.stdin:
         cols = line.strip().split('\t')
         row = td.fields(cols)
+        qid = row['qid']
+        idx = row['idx']
         output = []
         output.append(label2gain(row['label']))
         output.append("qid:" + row['qid'])
-
+        for f, i in feats.items():
+            output.append('%d:%s' % (i, row[f]))
+        payload = ' '.join(output)
+        print '%s:%d\t%s' % (qid, idx, payload)
 
 if __name__ == "__main__":
     main()
