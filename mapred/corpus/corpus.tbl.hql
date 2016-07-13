@@ -21,7 +21,7 @@ CREATE EXTERNAL TABLE rank.corpus (
         quick_accept TINYINT,
         is_recommend TINYINT,
         station INT,
-        confirm_rate INT,
+        confirm_rate FLOAT,
         collect_count INT,
         sales_label INT,
         is_collect TINYINT,

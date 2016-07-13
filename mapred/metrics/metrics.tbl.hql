@@ -1,3 +1,5 @@
+-- -*- sql -*-
+
 CREATE EXTERNAL TABLE `metrics`(
   `qid` string,
   `label` string,

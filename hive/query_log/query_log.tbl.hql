@@ -21,7 +21,7 @@ CREATE EXTERNAL TABLE rank.query_log (
         quick_accept TINYINT,
         is_recommend TINYINT,
         station STRING,
-        confirm_rate INT,
+        confirm_rate FLOAT,
         collect_count INT,
         sales_label STRING,
         is_collect TINYINT,
