@@ -220,12 +220,14 @@ if (NOT GLOG_FOUND)
   set(GLOG_CONFIGURE ${GLOG_PREFIX}/configure_with_gflags)
   set(GLOG_CONFIGURE_TMP ${GLOG_PREFIX}/tmp/configure_with_gflags)
 
+  set(GLOG_INSTALL_DIR ${GLOG_PREFIX}/install)
+
   file(WRITE ${GLOG_CONFIGURE_TMP}
     "#!/bin/sh
 export CPPFLAGS=-I${GFLAGS_INCLUDE_DIRS}
 export LDFLAGS=-L${GFLAGS_LIBRARY_PATH}
 # export LIBS=-lgflags
-${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR}
+${GLOG_SOURCE_DIR}/configure --with-gflags=${GFLAGS_BUILD_DIR} --prefix=${GLOG_INSTALL_DIR}
 # workaround in centos 6.5
 cd ${GLOG_SOURCE_DIR} && automake --add-missing
 ")
@@ -242,26 +244,27 @@ cd ${GLOG_SOURCE_DIR} && automake --add-missing
     PREFIX ${GLOG_PREFIX}
     GIT_REPOSITORY https://github.com/google/glog.git
     GIT_TAG v${glog_RELEASE}
-    CONFIGURE_COMMAND ${GLOG_CONFIGURE} --prefix=<INSTALL_DIR>
+    CONFIGURE_COMMAND ${GLOG_CONFIGURE}
     BUILD_COMMAND make
+    INSTALL_DIR ${GLOG_INSTALL_DIR}
+    INSTALL_COMMAND make install
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
-    INSTALL_COMMAND ""
     )
 
-  ExternalProject_Get_Property(glog-${glog_RELEASE} binary_dir)
-  ExternalProject_Get_Property(glog-${glog_RELEASE} source_dir)
+  ExternalProject_Get_Property(glog-${glog_RELEASE} install_dir)
+  # ExternalProject_Get_Property(glog-${glog_RELEASE} binary_dir)
+  # ExternalProject_Get_Property(glog-${glog_RELEASE} source_dir)
 
-  # set(GLOG_INCLUDE_DIRS ${binary_dir}/src CACHE PATH "Local glog headers")
-  set(GLOG_INCLUDE_DIRS ${binary_dir}/src CACHE PATH "Local glog headers")
-  set(GLOG_LIBRARY_PATH ${binary_dir}/.libs )
+  set(GLOG_INCLUDE_DIRS ${install_dir}/include)
+  set(GLOG_LIBRARY_PATH ${install_dir}/lib )
 
   # WORKAROUND log_severity.h is missing
-  ExternalProject_Add_Step(
-    glog-${glog_RELEASE} workaround
-    COMMAND cp ${source_dir}/src/glog/log_severity.h ${GLOG_INCLUDE_DIRS}/glog
-    DEPENDEES build
-    )
+  # ExternalProject_Add_Step(
+  #   glog-${glog_RELEASE} workaround
+  #   COMMAND cp ${source_dir}/src/glog/log_severity.h ${GLOG_INCLUDE_DIRS}/glog
+  #   DEPENDEES build
+  #   )
 
   # import built library as a new one
   set(GLOG_LIBRARIES glog)
@@ -292,14 +295,17 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
   message (STATUS " mysql-connector c++ has not been found.")
   message (STATUS " it will be downloaded and built automatically when doing 'make'.")
 
+  set(MYSQLCPPCONN_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mysqlcppconn-${mysqlcppconn_RELEASE})
+
   ExternalProject_Add(
     MySQLConnectorCpp-${mysqlcppconn_RELEASE}
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mysqlcppconn-${mysqlcppconn_RELEASE}
+    PREFIX ${MYSQLCPPCONN_PREFIX}
     URL http://cdn.mysql.com/archives/mysql-connector-c++/mysql-connector-c++-${mysqlcppconn_RELEASE}.tar.gz
     # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     # BUILD_COMMAND make
-    INSTALL_COMMAND ""
+    INSTALL_DIR ${MYSQLCPPCONN_PREFIX}/install
+    INSTALL_COMMAND make install
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
     LOG_CONFIGURE ON
@@ -307,19 +313,18 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
     )
 
   # Specify include dir
+  ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} install_dir)
   ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} source_dir)
-  ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} binary_dir)
+  # ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} binary_dir)
 
-  set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${source_dir})
-  set(MYSQLCONNECTORCPP_LIBRARY_PATH ${binary_dir}/driver)
+  set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${install_dir}/include)
+  set(MYSQLCONNECTORCPP_LIBRARY_PATH ${install_dir}/lib/x86_64-linux-gnu)
 
   ExternalProject_Add_Step(
     MySQLConnectorCpp-${mysqlcppconn_RELEASE} workaround
     COMMAND
-    cp ${source_dir}/driver/mysql_connection.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
-    && cp ${source_dir}/driver/mysql_driver.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
-    && cp ${source_dir}/driver/mysql_public_iface.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
-    DEPENDEES build
+    cp ${source_dir}/driver/mysql_public_iface.h ${MYSQLCONNECTORCPP_INCLUDE_DIRS}
+    DEPENDEES install
     )
 
 
@@ -348,11 +353,13 @@ if(NOT MEMCACHED_FOUND)
   set(LIBMCD_SOURCE_DIR ${LIBMCD_PREFIX}/src/Memcached-${libmemcached_RELEASE})
   set(LIBMCD_BUILD_DIR ${LIBMCD_PREFIX}/src/Memcached-${libmemcached_RELEASE}-build)
 
+  set(LIBMCD_INSTALL_DIR ${LIBMCD_PREFIX}/install)
+
   set(LIBMCD_CONFIGURE ${LIBMCD_PREFIX}/configure_tmp)
 
   file(WRITE ${LIBMCD_CONFIGURE}
     "#!/bin/sh
-${LIBMCD_SOURCE_DIR}/configure --disable-sasl
+${LIBMCD_SOURCE_DIR}/configure --disable-sasl --prefix=${LIBMCD_INSTALL_DIR}
 # workaround in centos 6.5
 #cd ${LIBMCD_SOURCE_DIR} && automake --add-missing
 # workaround for sasl
@@ -366,7 +373,8 @@ cp ${LIBMCD_BUILD_DIR}/libmemcached-1.0/configure.h ${LIBMCD_SOURCE_DIR}/libmemc
     # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     CONFIGURE_COMMAND sh ${LIBMCD_CONFIGURE} --prefix=<INSTALL_DIR>
     BUILD_COMMAND make
-    INSTALL_COMMAND ""
+    INSTALL_DIR ${LIBMCD_INSTALL_DIR}
+    INSTALL_COMMAND make install
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
     LOG_CONFIGURE ON
@@ -374,20 +382,10 @@ cp ${LIBMCD_BUILD_DIR}/libmemcached-1.0/configure.h ${LIBMCD_SOURCE_DIR}/libmemc
     )
 
   # Specify include dir
-  ExternalProject_Get_Property(Memcached-${libmemcached_RELEASE} source_dir)
-  ExternalProject_Get_Property(Memcached-${libmemcached_RELEASE} binary_dir)
+  ExternalProject_Get_Property(Memcached-${libmemcached_RELEASE} install_dir)
 
-  set(MEMCACHED_INCLUDE_DIRS ${source_dir})
-  set(MEMCACHED_LIBRARY_PATH ${binary_dir}/libmemcached/.libs)
-
-  # ExternalProject_Add_Step(
-  #   Memcached-${libmemcached_RELEASE} workaround
-  #   COMMAND
-  #   cp ${source_dir}/driver/mysql_connection.h ${MEMCACHED_INCLUDE_DIRS}
-  #   && cp ${source_dir}/driver/mysql_driver.h ${MEMCACHED_INCLUDE_DIRS}
-  #   && cp ${source_dir}/driver/mysql_public_iface.h ${MEMCACHED_INCLUDE_DIRS}
-  #   DEPENDEES build
-  #   )
+  set(MEMCACHED_INCLUDE_DIRS ${install_dir}/include)
+  set(MEMCACHED_LIBRARY_PATH ${install_dir}/lib)
 
   set(MEMCACHED_LIBRARIES libmemcached)
   add_library(libmemcached UNKNOWN IMPORTED)
@@ -405,6 +403,61 @@ cp ${LIBMCD_BUILD_DIR}/libmemcached-1.0/configure.h ${LIBMCD_SOURCE_DIR}/libmemc
   link_directories(${MEMCACHED_LIBRARY_PATH})
 
 endif(NOT MEMCACHED_FOUND)
+
+
+################################################################################
+# pugixml - http://pugixml.org
+################################################################################
+set(pugixml_RELEASE 1.7)
+find_package(PugiXML)
+if (NOT PUGIXML_FOUND)
+  message (STATUS " pugixml library has not been found.")
+  message (STATUS " pugixml will be downloaded and built automatically ")
+  message (STATUS " when doing 'make'. ")
+
+  set(PUGIXML_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/pugixml-${pugixml_RELEASE})
+  set(PUGIXML_SRC ${PUGIXML_PREFIX}/src/pugixml-${pugixml_RELEASE}/src)
+  set(PUGIXML_MAKEFILE ${PUGIXML_PREFIX}/Makefile)
+  set(PUGIXML_BUILD ${PUGIXML_PREFIX}/build.sh)
+
+  file(WRITE ${PUGIXML_MAKEFILE}
+    "libpugixml.a: pugixml.o
+	ar rcs $@ $^")
+
+  file(WRITE ${PUGIXML_BUILD}
+    "cp ${PUGIXML_MAKEFILE} ${PUGIXML_SRC} && make -C ${PUGIXML_SRC}")
+
+  ExternalProject_Add(
+    pugixml-${pugixml_RELEASE}
+    URL http://github.com/zeux/pugixml/releases/download/v${pugixml_RELEASE}/pugixml-${pugixml_RELEASE}.tar.gz
+    # CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    PREFIX ${PUGIXML_PREFIX}
+    CONFIGURE_COMMAND ""
+    CMAKE_COMMAND ""
+    BUILD_COMMAND sh ${PUGIXML_BUILD}
+    INSTALL_COMMAND ""
+    # Wrap download, configure and build steps in a script to log output
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+    )
+
+  ExternalProject_Get_Property(pugixml-${pugixml_RELEASE} source_dir)
+
+  set(PUGIXML_INCLUDE_DIRS ${source_dir}/src)
+  set(PUGIXML_LIBRARY_PATH ${source_dir}/src)
+
+  set(PUGIXML_BUILD_DIR ${binary_dir}) # to compile glog
+
+  # import built library as a new one
+  set(PUGIXML_LIBRARIES pugixml)
+  add_library(pugixml UNKNOWN IMPORTED)
+  set_target_properties(pugixml PROPERTIES IMPORTED_LOCATION ${PUGIXML_LIBRARY_PATH}/libpugixml.a)
+  add_dependencies(pugixml pugixml-${pugixml_RELEASE})
+
+  include_directories(${PUGIXML_INCLUDE_DIRS})
+  link_directories(${PUGIXML_LIBRARY_PATH})
+endif(NOT PUGIXML_FOUND)
 
 add_subdirectory(svr)
 add_subdirectory(http)
