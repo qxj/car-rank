@@ -9,6 +9,9 @@
 --dry=false
 --lock_file=/tmp/rank_svr.pid
 --thread_pool_size=4
+### lambda mart model
+--lambda_mart_model=/tmp/lambda_mart.xml
+--features=/tmp/feats.txt
 ### memcached
 --memcached_server=--SERVER=127.0.0.1:11211
 --memcached_expired_secs=600

@@ -25,7 +25,7 @@ RankSvr::RankSvr(const std::string& address, short port)
 {}
 
 void
-RankSvr::legacy_handler(const http::server::request& req,
+RankSvr::rank_handler(const http::server::request& req,
         http::server::reply& rep)
 {
 
@@ -52,7 +52,11 @@ RankSvr::legacy_handler(const http::server::request& req,
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
-        legacy_.ranking(jreq, jrep);
+        if (jreq.algo == "lambdamart") {
+          lmart_.ranking(jreq, jrep);
+        } else {
+          legacy_.ranking(jreq, jrep);
+        }
       }
     } catch (const std::invalid_argument& e) {
       jrep.ret = -1;
