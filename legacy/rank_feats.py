@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; tab-width: 4; -*-
-# @(#) car_score.py  Time-stamp: <Julian Qian 2016-05-18 17:33:13>
+# @(#) car_score.py  Time-stamp: <Julian Qian 2016-07-16 23:27:21>
 # Copyright 2015, 2016 Julian Qian
 # Author: Julian Qian <junist@gmail.com>
 # Version: $Id: car_score.py,v 0.1 2015-11-18 14:35:36 jqian Exp $
@@ -254,6 +254,18 @@ class RankFeats(IntervalDb):
         # self.db.commit()
         # logger.info('[accept] update %d avaiable days', updated_cnt)
 
+    def update_stats(self):
+        sql = '''update car_rank_feats cr
+        join car_stats cs on cr.car_id=cs.cid
+        set cr.station=if(cs.station_name<>"",1,0),
+        cr.confirm_rate=cs.confirmed_rate_app,
+        cr.review=cs.review
+        where last_update_time > '{}'
+        '''.format(self.update_time)
+        updated_cnt = self.db.exec_sql(sql, returnAffectedRows=True)
+        self.db.commit()
+        logger.info('[stats] update %d station flag', updated_cnt)
+
     # `recent_rejected` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的拒单数',
     # `recent_accepted` int(11) DEFAULT NULL COMMENT '3个月内最近10个单里的接单数',
     # `recent_cancelled_owner` int(11) DEFAULT NULL COMMENT '最近一个月内车主取消订单数',
@@ -377,6 +389,7 @@ class RankFeats(IntervalDb):
         self.update_review()
         self.update_collect()
         self.update_orders()
+        self.update_stats()
         self.update_accept()
         self.update_sales()
         self.db.commit()

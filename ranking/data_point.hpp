@@ -11,14 +11,21 @@
 #define DATA_POINT_HPP_
 
 #include <vector>
+#include <string>
 
 namespace ranking
 {
 struct DataPoint
 {
+  enum {MAX_FEAT_NUM = 20};
   // feature index starts from 1
   int id;
-  std::vector<float> feats;
+  float feats[MAX_FEAT_NUM];
+
+  void set(const std::string& feat, float val)
+  {
+
+  }
 
   float getValue(int feat_id) {
     return feats[feat_id];

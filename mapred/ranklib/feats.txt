@@ -13,3 +13,7 @@ station
 confirm_rate
 collect_count
 is_collect
+is_ordered
+is_model
+is_price
+quality

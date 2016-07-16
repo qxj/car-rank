@@ -32,8 +32,9 @@ class FeatureDb
   explicit FeatureDb(std::string feat_file);
   ~FeatureDb();
 
-  void fetch_feats(std::vector<DataPoint>&);
+  void fetch_feats(std::vector<DataPoint>&, int);
 
+  void set_feat(DataPoint&, const std::string&, float);
   int feat_index(const std::string& feat_name);
 
  private:

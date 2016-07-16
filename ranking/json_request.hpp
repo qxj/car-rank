@@ -15,44 +15,9 @@
 #include <tuple>
 #include <vector>
 
+#include "data_point.hpp"
+
 namespace ranking {
-
-struct CarInfo
-{
-  int car_id;
-  float distance;
-  int price;
-
-  // to be fetched from db
-  // 1) car quality score
-  float quality{0};
-  // 2) user preference
-  char is_ordered   : 1;
-  char is_collected : 1;
-  char is_model     : 1;
-  char is_price     : 1;
-
-  float score{0};
-
-  CarInfo(int car_id, float distance=0, float price=0)
-      : car_id(car_id) , distance(distance), price(price),
-        is_ordered(0), is_collected(0), is_model(0), is_price(0)
-  {}
-
-  std::tuple<float, float, float, float> trans_distance() const {
-    float d1{0}, d2{0}, d3{0}, d4{0};
-    if (distance < 2) {
-      d1 = - distance / 2;
-    } else if (distance < 5) {
-      d2 = - distance / 2;
-    } else if (distance < 12) {
-      d3 = - distance;
-    } else {
-      d4 = - distance * 2;
-    }
-    return std::make_tuple(d1, d2, d3, d4);
-  }
-};
 
 struct Query
 {
@@ -73,8 +38,7 @@ struct JsonRequest
 
   Query query;
 
-  typedef std::vector<CarInfo> CarsType;
-  CarsType cars;
+  std::vector<DataPoint> cars;
 
   JsonRequest() : algo("default") {}
 

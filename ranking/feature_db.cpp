@@ -41,7 +41,7 @@ FeatureDb::~FeatureDb()
 }
 
 void
-FeatureDb::fetch_feats(std::vector<DataPoint>& dps)
+FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
 {
   driver_->threadInit();
   try {
@@ -51,11 +51,40 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps)
 
     std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 
+    std::unordered_set<int> collected_cars;
+
+    // car_rank_users
+    if (user_id > 0) {
+      std::string sql{"select collected_cars from car_rank_users where user_id="};
+      sql.append(std::to_string(user_id));
+
+      VLOG(100) << "sql: " << sql;
+
+      std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
+      if (res->next()) {
+        using namespace boost::algorithm;
+        {
+          std::string str{std::move(res->getString("collected_cars"))};
+          std::string word;
+
+          for (auto it = make_split_iterator(str, token_finder(is_from_range(',', ',')));
+               it != decltype(it)(); ++it) {
+            word = std::move(boost::copy_range<std::string>(*it));
+            try {
+              collected_cars.insert(std::stoi(word));
+            } catch (const std::invalid_argument& e) {
+              VLOG(100) << "Invalid collected car_id: " << word;
+            }
+          }
+        }
+      }
+    }
+
     // car_rank_feats
     {
-      std::string sql{"select city_code, price_daily, proportion, review,"
-            "review_cnt,auto_accept,quick_accept,station,confirm_rate,"
-            "collect_count from car_rank_feats where car_id in ("};
+      std::string sql{"select car_id,city_code,price_daily,proportion,"
+            "review,review_cnt,auto_accept,quick_accept,station,confirm_rate,"
+            "collect_cnt from car_rank_feats where car_id in ("};
       std::for_each(dps.begin(), dps.end(),
               [&sql](DataPoint& dp)
               {
@@ -63,10 +92,39 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps)
                 sql.push_back(',');
               });
       sql.back() = ')';
+      sql.append(" order by car_id");
+
+      VLOG(100) << "sql: " << sql;
+
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
       while (res->next()) {
+        int car_id = res->getInt("car_id");
+        auto itr = collected_cars.find(car_id);
+        if (itr != collected_cars.end()) {
+          set_feat(dp, "is_collect", 1);
+        }
+
+        float price = static_cast<float>(res->getInt("price_daily"));
+        set_feat(dp, "price", price);
+        float proportion = static_cast<float>(res->getDouble("proportion"));
+        set_feat(dp, "proportion", proportion);
+        float review = static_cast<float>(res->getDouble("review"));
+        set_feat(dp, "review", review);
+        float review_cnt = static_cast<float>(res->getInt("review_cnt"));
+        set_feat(dp, "review_cnt", review_cnt);
+        float auto_accept = static_cast<float>(res->getInt("auto_accept"));
+        set_feat(dp, "auto_accept", auto_accept);
+        float quick_accept = static_cast<float>(res->getInt("quick_accept"));
+        set_feat(dp, "quick_accept", quick_accept);
+        float station = static_cast<float>(res->getInt("station"));
+        set_feat(dp, "station", station);
+        float confirm_rate = static_cast<float>(res->getDouble("confirm_rate"));
+        set_feat(dp, "confirm_rate", confirm_rate);
+        float collect_cnt = static_cast<float>(res->getInt("collect_cnt"));
+        set_feat(dp, "collect_cnt", collect_cnt);
       }
     }
+
 
   } catch (sql::SQLException &e) {
     LOG(ERROR) << "Mysql error " << e.what()
@@ -75,6 +133,13 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps)
 
   driver_->threadEnd();
 
+}
+
+void
+FeatureDb::set_feat(DataPoint& dp, const std::string& name, float value)
+{
+  int idx = feat_index(name);
+  dp.feats[idx] = value;
 }
 
 int

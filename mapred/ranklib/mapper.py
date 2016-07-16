@@ -29,10 +29,13 @@ def label2gain(label):
 
 def main():
     td = table.TableMeta('corpus_rl.desc')
-    feats = {}
+    feats = []
     i = 1
     for line in open('feats.txt'):
-        feats[line.strip()] = i
+        feat = line.strip()
+        if feat.startswith("#") or len(feat) == 0:
+            continue
+        feats.append((feat, i))
         i += 1
     for line in sys.stdin:
         cols = line.strip().split('\t')
@@ -42,8 +45,12 @@ def main():
         output = []
         output.append(label2gain(row['label']))
         output.append("qid:" + row['qid'])
-        for f, i in feats.items():
-            output.append('%d:%s' % (i, row[f]))
+        for feat, i in feats:
+            if feat in row:
+                output.append('%d:%s' % (i, row[feat]))
+            else:
+                sys.stderr.write(
+                    "reporter:counter:My Counters,Feature Missing,1\n")
         output.append("# idx:%d" % idx)
         payload = ' '.join([str(i) for i in output])
         print '%s:%.10d\t%s' % (qid, idx, payload)

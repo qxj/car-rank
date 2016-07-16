@@ -133,7 +133,10 @@ JsonRequest::operator<<(const std::string& json_string)
         throw std::invalid_argument("price is invalid, expect float type");
       }
     }
-    cars.emplace_back(car_id, distance, price);
+    cars.emplace_back(car_id);
+    auto& car = cars.back();
+    car.set("distance", distance);
+    car.set("price", price);
   }
   return *this;
 }
