@@ -1,4 +1,3 @@
-city_code
 has_date
 max_price
 price
@@ -8,7 +7,6 @@ review
 review_cnt
 auto_accept
 quick_accept
-is_recommend
 station
 confirm_rate
 collect_count
