@@ -13,7 +13,9 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <vector>
 
+#include "data_point.hpp"
 #include "json_request.hpp"
 
 namespace sql
@@ -29,6 +31,8 @@ class FeatureDb
  public:
   explicit FeatureDb(std::string feat_file);
   ~FeatureDb();
+
+  void fetch_feats(std::vector<DataPoint>&);
 
   int feat_index(const std::string& feat_name);
 

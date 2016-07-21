@@ -19,6 +19,11 @@
 
 #include "feature_db.hpp"
 
+DECLARE_string(my_host);
+DECLARE_string(my_user);
+DECLARE_string(my_passwd);
+DECLARE_string(my_dbname);
+
 namespace ranking
 {
 
@@ -32,6 +37,43 @@ FeatureDb::FeatureDb(std::string feat_file)
 
 FeatureDb::~FeatureDb()
 {
+
+}
+
+void
+FeatureDb::fetch_feats(std::vector<DataPoint>& dps)
+{
+  driver_->threadInit();
+  try {
+    std::unique_ptr<sql::Connection> conn(driver_->connect(
+        FLAGS_my_host, FLAGS_my_user, FLAGS_my_passwd));
+    conn->setSchema(FLAGS_my_dbname);
+
+    std::unique_ptr<sql::Statement> stmt(conn->createStatement());
+
+    // car_rank_feats
+    {
+      std::string sql{"select city_code, price_daily, proportion, review,"
+            "review_cnt,auto_accept,quick_accept,station,confirm_rate,"
+            "collect_count from car_rank_feats where car_id in ("};
+      std::for_each(dps.begin(), dps.end(),
+              [&sql](DataPoint& dp)
+              {
+                sql.append(std::to_string(dp.id));
+                sql.push_back(',');
+              });
+      sql.back() = ')';
+      std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
+      while (res->next()) {
+      }
+    }
+
+  } catch (sql::SQLException &e) {
+    LOG(ERROR) << "Mysql error " << e.what()
+               << ", SQLState: " << e.getSQLState() ;
+  }
+
+  driver_->threadEnd();
 
 }
 
