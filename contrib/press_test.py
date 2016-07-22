@@ -24,9 +24,10 @@ g_cntr = collections.Counter(timeout=0, requests=0, threads=0)
 
 class PressTest(threading.Thread):
 
-    def __init__(self, url, cnt=1000, sim_pages=0):
+    def __init__(self, url, algo='legacy', cnt=1000, sim_pages=0):
         super(PressTest, self).__init__()
         self.url = url
+        self.algo = algo
         self.pages = sim_pages
         self.cnt = cnt
 
@@ -38,7 +39,7 @@ class PressTest(threading.Thread):
         price_list = range(n)
         random.shuffle(price_list)
         data = {
-            "algo": "legacy",
+            "algo": self.algo,
             "car_list": car_list,
             "distance": [round(float(i) / n * 10, 2) for i in pre_dis],
             "price": price_list,
@@ -91,20 +92,23 @@ class PressTest(threading.Thread):
 def main():
     parser = argparse.ArgumentParser(description='press test tool')
     parser.add_argument('--url', type=str, help='rank svr url',
-                        default="http://127.0.0.1:20164/legacy")
+                        default="http://127.0.0.1:20164/rank")
     parser.add_argument('--thr-num', type=int, default=20,
                         help='concurrent threads num')
     parser.add_argument('--sim-pages', type=int, default=5,
                         help='generate new data every some pages')
     parser.add_argument('--req-num', type=int, default=1000,
                         help='request num per thread')
+    parser.add_argument('--algo', type=str, default='legacy',
+                        help='rank algorithm')
     parser.add_argument('--verbose', action='store_true',
                         help='print verbose log')
     args = parser.parse_args()
 
     threads = []
     for _ in range(args.thr_num):
-        threads.append(PressTest(args.url, args.req_num, args.sim_pages))
+        threads.append(PressTest(args.url, args.algo,
+                                 args.req_num, args.sim_pages))
     start = timer()
     for thr in threads:
         thr.start()

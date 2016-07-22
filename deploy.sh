@@ -23,6 +23,13 @@ sync_log01()
     rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress $from work@10.161.59.223:rank/$to
 }
 
+sync_logic00()
+{
+    from=$1
+    to=$2
+    rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress $from work@10.144.208.205:rank/$to
+}
+
 sync_op()
 {
     from=$1
@@ -55,10 +62,14 @@ case $1 in
         sync_relay deploy.sh ""
         sync_relay mapred/ mapred
         sync_relay hive/ hive
+        sync_relay legacy/ legacy
         ;;
     log01)
         sync_log01 "mapred/*" ""
         sync_log01 hive/query_log/ hive
+        ;;
+    logic00)
+        sync_logic00 legacy/ legacy
         ;;
     op)
         sync_op build/bin/ranksvr ranksvr.$today

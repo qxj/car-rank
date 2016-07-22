@@ -10,7 +10,9 @@ include_directories(${CMAKE_SOURCE_DIR}/thirdparty
 
 include_directories(${GLOG_INCLUDE_DIRS}
   ${GFLAGS_INCLUDE_DIRS}
-  ${MEMCACHED_INCLUDE_DIRS})
+  ${GTEST_INCLUDE_DIRS}
+  ${MEMCACHED_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIRS})
 
 target_link_libraries(ranksvr
   util
@@ -23,6 +25,7 @@ target_link_libraries(ranksvr
   ${MEMCACHED_LIBRARIES}
   ${MEMCACHEDUTIL_LIBRARIES}
   ${MYSQL_LIBRARIES}
+  ${PUGIXML_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${CMAKE_DL_LIBS}
   )

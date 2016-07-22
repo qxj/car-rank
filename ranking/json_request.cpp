@@ -7,6 +7,7 @@
 // @created   2016-07-05 19:42:24
 //
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <glog/logging.h>
@@ -15,6 +16,9 @@
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+
+#include "data_point.hpp"
+#include "feat_idx.hpp"
 
 #include "json_request.hpp"
 
@@ -133,13 +137,22 @@ JsonRequest::operator<<(const std::string& json_string)
         throw std::invalid_argument("price is invalid, expect float type");
       }
     }
-    cars.emplace_back(car_id, distance, price);
+    cars.emplace_back(car_id);
+    auto& car = cars.back();
+    car.set(feat_idx::DISTANCE, distance);
+    car.set(feat_idx::PRICE, price);
   }
+
+  // NOTE convenient to fetch data from db
+  std::sort(cars.begin(), cars.end(),
+            [](const DataPoint& a, const DataPoint& b) {
+              return a.id < b.id;
+            });
   return *this;
 }
 
 void
-JsonReply::assign(std::string& output)
+JsonReply::to_buffer(std::string& output)
 {
   Document doc;
   Document::AllocatorType& alloc = doc.GetAllocator();
@@ -176,6 +189,14 @@ JsonReply::assign(std::string& output)
   Writer<StringBuffer> writer(buffer);
   o.Accept(writer);
   output.assign(buffer.GetString());
+}
+
+void
+JsonReply::from_request(const JsonRequest& req)
+{
+  for (const auto& car: req.cars) {
+    car_ids.push_back(car.id);
+  }
 }
 
 }

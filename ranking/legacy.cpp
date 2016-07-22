@@ -9,16 +9,18 @@
 
 #include <algorithm>
 
+#include <glog/logging.h>
+
 #include "legacy.hpp"
 
-using namespace ranking;
+namespace fi = ::feat_idx;
 
 namespace
 {
 class LegacyScore
 {
  public:
-  explicit LegacyScore(const LegacyAlgo::Weights& ws)
+  explicit LegacyScore(const ranking::LegacyAlgo::Weights& ws)
   {
     w_quality    = ws.get_weight("quality");
     w_distance1  = ws.get_weight("distance1");
@@ -33,17 +35,38 @@ class LegacyScore
     w_price      = ws.get_weight("prefer_price");
   }
 
-  float score(const CarInfo& ci)
+  std::tuple<float, float, float, float> trans_distance(float distance)
+  {
+    float d1{0}, d2{0}, d3{0}, d4{0};
+    if (distance < 2) {
+      d1 = - distance / 2;
+    } else if (distance < 5) {
+      d2 = - distance / 2;
+    } else if (distance < 12) {
+      d3 = - distance;
+    } else {
+      d4 = - distance * 2;
+    }
+    return std::make_tuple(d1, d2, d3, d4);
+  }
+
+  float score(const ranking::DataPoint& dp)
   {
     float d1, d2, d3, d4;
-    std::tie(d1, d2, d3, d4) = ci.trans_distance();
+    std::tie(d1, d2, d3, d4) = trans_distance(dp.get(fi::DISTANCE));
+
+    float quality = dp.get(fi::QUALITY);
+    float is_collect = dp.get(fi::IS_COLLECT);
+    float is_ordered = dp.get(fi::IS_ORDERED);
+    float is_model = dp.get(fi::IS_MODEL);
+    float is_price = dp.get(fi::IS_PRICE);
 
     float s;
 
-    s = w_quality * ci.quality + w_distance1 * d1 + w_distance2 * d2 + w_distance3 * d3 + \
-        w_distance4 * d4 + \
-        w_preference * (w_collected * ci.is_collected + w_ordered * ci.is_ordered + \
-                w_model * ci.is_model + w_price * ci.is_price);
+    s = w_quality * quality + w_distance1 * d1 + w_distance2 * d2 + \
+        w_distance3 * d3 + w_distance4 * d4 + \
+        w_preference * (w_collected * is_collect + w_ordered * is_ordered + \
+                w_model * is_model + w_price * is_price);
     return s;
   }
  private:
@@ -60,38 +83,50 @@ class LegacyScore
 };
 }
 
+namespace ranking
+{
+
+const LegacyAlgo::Weights&
+LegacyAlgo::get_weights(const std::string& algo)
+{
+  const auto& itr = algos_.find(algo);
+  if (itr == algos_.end()) {
+    LOG(ERROR) << "no algo found: " << algo;
+    throw std::invalid_argument("invalid algo");
+  }
+  return itr->second;
+}
+
+float
+LegacyAlgo::get_weight(const std::string& algo, const std::string& feat)
+{
+  // FIXME shared lock
+  const auto& itr = algos_.find(algo);
+  if (itr != algos_.end()) {
+    return itr->second.get_weight(feat);
+  }
+  LOG(WARNING) << "missing feature weight: algo " << algo << ", feat " << feat;
+  return 0;
+}
+
 Legacy::Legacy()
-    : algo_(), db_()
+    : algo_()
 {
   // TODO fetch algos from db every some interval minutes
   db_.fetch_algos(algo_);
 }
 
 void
-Legacy::ranking(ranking::JsonRequest & req, ranking::JsonReply & rep)
+Legacy::ranking(RankItr begItr, RankItr endItr)
 {
-  db_.fetch_scores(req);
-  JsonRequest::CarsType& cars = req.cars;
-
-  const auto& weights = algo_.get_weights(req.algo);
+  const auto& weights = algo_.get_weights("legacy");
 
   LegacyScore ls(weights);
 
-  std::for_each(cars.begin(), cars.end(),
-                [this, &ls](CarInfo& ci) {
-                  ci.score = ls.score(ci);
+  std::for_each(begItr, endItr,
+                [this, &ls](DataPoint& dp) {
+                  dp.score = ls.score(dp);
                 });
+}
 
-  std::sort(cars.begin(), cars.end(),
-            [this, &ls](const CarInfo& a, const CarInfo& b) {
-              return a.score > b.score;
-            });
-  rep.from_request(req);
-
-  if (req.debug) {
-    std::for_each(cars.begin(), cars.end(),
-                  [this, &rep](const CarInfo& ci) {
-                    rep.scores.push_back(ci.score);
-                  });
-  }
 }

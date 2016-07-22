@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <glog/logging.h>
 
+#include "data_point.hpp"
 #include "json_request.hpp"
 
 namespace
@@ -25,8 +26,6 @@ class JsonRequestTest: public ::testing::Test
   {
     // google::InitGoogleLogging("json_parser_test");
   }
- protected:
-  ranking::JsonRequest parser;
 };
 
 TEST_F(JsonRequestTest, json_to_request)

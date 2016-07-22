@@ -48,8 +48,12 @@ int main(int argc, char* argv[])
     // Initialise the server.
     RankSvr s(FLAGS_host, static_cast<short>(FLAGS_port));
 
+    // TODO obsolote this handler
     s.add_handler("/legacy", std::bind(
-        &RankSvr::legacy_handler, &s, _1, _2));
+        &RankSvr::rank_handler, &s, _1, _2));
+
+    s.add_handler("/rank", std::bind(
+        &RankSvr::rank_handler, &s, _1, _2));
 
     // Run the server until stopped.
     s.run();
