@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <glog/logging.h>
 
+#include "data_point.hpp"
 #include "json_request.hpp"
 
 namespace

@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-#include "data_point.hpp"
 #include "json_request.hpp"
 
 namespace sql
@@ -26,6 +25,8 @@ class Driver;
 
 namespace ranking
 {
+class DataPoint;
+
 class FeatureDb
 {
  public:

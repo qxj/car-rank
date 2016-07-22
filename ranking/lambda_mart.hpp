@@ -11,7 +11,6 @@
 #define LAMBDA_MART_HPP_
 
 #include "ranker.hpp"
-#include "data_point.hpp"
 #include "ensemble.hpp"
 
 namespace ranking

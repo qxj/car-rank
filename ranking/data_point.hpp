@@ -28,7 +28,7 @@ struct DataPoint
   float score;
 
   // dense features
-  std::array<float, feat_idx::MAX_NUM> feats;
+  std::array<float, feat_idx::MAX_NUM> feats{};
 
   void set(int feat, float val)
   {
@@ -43,6 +43,21 @@ struct DataPoint
   bool operator<(const DataPoint& o) const
   {
     return this->id < o.id;
+  }
+
+  std::string to_string() const
+  {
+    std::string out{"dp id:"};
+    out.append(std::to_string(id));
+    out.append(",score:");
+    out.append(std::to_string(score));
+    out.append(",feats:");
+    for (auto& f: feats) {
+      out.append(std::to_string(f));
+      out.append(",");
+    }
+    out.back() = '.';
+    return out;
   }
 };
 

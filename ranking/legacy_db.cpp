@@ -19,6 +19,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
+#include "data_point.hpp"
 #include "legacy.hpp"
 
 #include "legacy_db.hpp"

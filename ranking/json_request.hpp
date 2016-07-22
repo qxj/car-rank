@@ -15,8 +15,6 @@
 #include <tuple>
 #include <vector>
 
-#include "data_point.hpp"
-
 namespace ranking
 {
 
@@ -62,11 +60,7 @@ struct JsonReply
 
   void to_buffer(std::string&);
 
-  void from_request(const JsonRequest& req) {
-    for (const auto& car: req.cars) {
-      car_ids.push_back(car.id);
-    }
-  }
+  void from_request(const JsonRequest& req);
 };
 
 }

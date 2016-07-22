@@ -16,10 +16,10 @@
 
 #include <gtest/gtest_prod.h>
 
-#include "data_point.hpp"
-
 namespace ranking
 {
+class DataPoint;
+
 class Split
 {
  public:
@@ -65,10 +65,7 @@ class RegressionTree
   explicit RegressionTree(SplitPtr root) :
       root_(root) {}
 
-  double eval(const DataPoint& dp)
-  {
-    return root_->eval(dp);
-  }
+  double eval(const DataPoint& dp);
 
   std::string to_string() const;
 

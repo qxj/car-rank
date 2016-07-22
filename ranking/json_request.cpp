@@ -17,6 +17,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#include "data_point.hpp"
 #include "feat_idx.hpp"
 
 #include "json_request.hpp"
@@ -188,6 +189,14 @@ JsonReply::to_buffer(std::string& output)
   Writer<StringBuffer> writer(buffer);
   o.Accept(writer);
   output.assign(buffer.GetString());
+}
+
+void
+JsonReply::from_request(const JsonRequest& req)
+{
+  for (const auto& car: req.cars) {
+    car_ids.push_back(car.id);
+  }
 }
 
 }

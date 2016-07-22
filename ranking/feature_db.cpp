@@ -19,6 +19,8 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
+#include "data_point.hpp"
+
 #include "feature_db.hpp"
 
 DEFINE_string(my_host, "tcp://127.0.0.1:3306", "mysql host");
@@ -134,7 +136,7 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
 
     // car_rank_feats
     {
-      std::string sql{"select car_id,city_code,price_daily,proportion,"
+      std::string sql{"select car_id,city_code,model,price_daily,proportion,"
             "review,review_cnt,auto_accept,quick_accept,station,confirm_rate,"
             "collect_cnt from car_rank_feats where car_id in ("};
       std::for_each(dps.begin(), dps.end(),
@@ -180,11 +182,11 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
         }
 
         float price = static_cast<float>(res->getInt("price_daily"));
-        dp.set(fi::PRICE, price);
-
         {
           if (dp.get(fi::PRICE) > 0) {  // request will override db
             price = dp.get(fi::PRICE);
+          } else {
+            dp.set(fi::PRICE, price);
           }
           if (price >= prefer_price.first &&
               price <= prefer_price.second) {
@@ -221,6 +223,9 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
       VLOG(100) << "loaded " << res->rowsCount() << " car feature rows";
     }
 
+  } catch (sql::InvalidArgumentException &e) {
+    LOG(ERROR) << "ResultSet error " << e.what()
+               << ", SQLState: " << e.getSQLState() ;
 
   } catch (sql::SQLException &e) {
     LOG(ERROR) << "Mysql error " << e.what()

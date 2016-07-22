@@ -15,6 +15,8 @@
 #include <glog/logging.h>
 #include <pugixml.hpp>
 
+#include "data_point.hpp"
+
 #include "ensemble.hpp"
 
 namespace ranking
@@ -52,6 +54,12 @@ std::string
 Split::to_string() const
 {
   return get_string("");
+}
+
+double
+RegressionTree::eval(const DataPoint& dp)
+{
+  return root_->eval(dp);
 }
 
 std::string
@@ -121,13 +129,13 @@ Ensemble::build_trees(const char* xmlContent)
     pugi::xml_attribute attr = tree.attribute("weight");
     float weight = attr.as_float();
     weights_.push_back(weight);
-    const char* treeId = tree.attribute("id").value();
-    LOG(INFO) << "build tree " << treeId;
+    // const char* treeId = tree.attribute("id").value();
     // build regression tree
     pugi::xml_node root = tree.child("split");
     SplitPtr sp = create_tree(root);
     trees_.push_back(std::make_shared<RegressionTree>(sp));
   }
+  LOG(INFO) << "ensemble " << trees_.size() << " trees";
 }
 
 float

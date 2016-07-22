@@ -16,8 +16,6 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "data_point.hpp"
-
 namespace sql
 {
 class Connection;
@@ -28,6 +26,7 @@ namespace ranking
 {
 
 class LegacyAlgo;
+class DataPoint;
 
 class LegacyDb : private boost::noncopyable
 {
