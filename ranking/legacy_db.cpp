@@ -19,7 +19,6 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "data_point.hpp"
 #include "legacy.hpp"
 
 #include "legacy_db.hpp"
@@ -48,7 +47,7 @@ LegacyDb::~LegacyDb()
 }
 
 void
-LegacyDb::fetch_legacy(std::vector<DataPoint>& dps, int user_id)
+LegacyDb::fetch_legacy(RankItr begItr, RankItr endItr, int user_id)
 {
   driver_->threadInit();
   try {
@@ -64,8 +63,8 @@ LegacyDb::fetch_legacy(std::vector<DataPoint>& dps, int user_id)
       std::string sql{"select car_id, quality, price, model from "
             "car_rank_legacy where car_id in ("};
       // combine car ids
-      std::for_each(dps.begin(), dps.end(),
-              [&sql](DataPoint& dp)
+      std::for_each(begItr, endItr,
+              [&sql](const DataPoint& dp)
               {
                 sql.append(std::to_string(dp.id));
                 sql.push_back(',');
@@ -77,22 +76,22 @@ LegacyDb::fetch_legacy(std::vector<DataPoint>& dps, int user_id)
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
 
-      size_t i = 0;
-      while (res->next()) {
+      RankItr curItr = begItr;
+      while (res->next() && curItr < endItr) {
         int car_id = res->getInt("car_id");
 
-        while (i < dps.size() && dps[i].id != car_id) {
-          LOG(ERROR) << "rotten request? car " << dps[i].id
+        while (curItr < endItr && curItr->id != car_id) {
+          LOG(ERROR) << "rotten request? car " << curItr->id
                      << " is missing";
-          i ++;
+          curItr ++;
         }
 
-        if (! (i < dps.size() && dps[i].id == car_id) ) {
+        if (! (curItr < endItr && curItr->id == car_id) ) {
           // throw std::invalid_argument("broken requests, no data");
           break;
         }
 
-        auto& dp = dps[i++];
+        auto& dp = *curItr++;
 
         float quality = static_cast<float>(res->getDouble("quality"));
         dp.set(fi::QUALITY, quality);

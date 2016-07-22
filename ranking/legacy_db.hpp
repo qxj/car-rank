@@ -12,9 +12,10 @@
 
 #include <map>
 #include <mutex>
-#include <vector>
 
 #include <boost/noncopyable.hpp>
+
+#include "data_point.hpp"
 
 namespace sql
 {
@@ -26,7 +27,6 @@ namespace ranking
 {
 
 class LegacyAlgo;
-class DataPoint;
 
 class LegacyDb : private boost::noncopyable
 {
@@ -34,7 +34,7 @@ class LegacyDb : private boost::noncopyable
   LegacyDb();
   ~LegacyDb();
 
-  void fetch_legacy(std::vector<DataPoint>&, int);
+  void fetch_legacy(RankItr, RankItr, int);
   void fetch_algos(LegacyAlgo&);
  private:
   sql::Driver* driver_;

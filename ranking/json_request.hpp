@@ -15,6 +15,8 @@
 #include <tuple>
 #include <vector>
 
+#include "data_point.hpp"
+
 namespace ranking
 {
 

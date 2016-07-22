@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "json_request.hpp"
+#include "data_point.hpp"
 
 namespace sql
 {
@@ -25,7 +25,6 @@ class Driver;
 
 namespace ranking
 {
-class DataPoint;
 
 class FeatureDb
 {
@@ -33,7 +32,7 @@ class FeatureDb
   FeatureDb();
   ~FeatureDb();
 
-  void fetch_feats(std::vector<DataPoint>&, int);
+  void fetch_feats(RankItr, RankItr, int);
 
  private:
   sql::Driver* driver_;

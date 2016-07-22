@@ -17,7 +17,7 @@ namespace ranking
 class Ranker
 {
  public:
-  virtual void ranking(RankList&) = 0;
+  virtual void ranking(RankItr, RankItr) = 0;
 };
 }
 

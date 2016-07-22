@@ -9,9 +9,10 @@
 --dry=false
 --lock_file=/tmp/rank_svr.pid
 --thread_pool_size=4
+### only rank ahead cars
+--rank_num=60
 ### lambda mart model
 --lambda_mart_model=/tmp/lambda_mart.xml
---lambda_mart_ahead=45
 ### memcached
 --memcached_server=--SERVER=127.0.0.1:11211
 --memcached_expired_secs=600

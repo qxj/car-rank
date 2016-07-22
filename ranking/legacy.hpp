@@ -72,12 +72,12 @@ class Legacy : public Ranker
  public:
   Legacy();
   virtual ~Legacy() {}
-  void update(RankList& cars, int user_id)
+  void update(RankItr beg, RankItr end, int user_id)
   {
-    db_.fetch_legacy(cars, user_id);
+    db_.fetch_legacy(beg, end, user_id);
   }
 
-  void ranking(RankList&) override;
+  void ranking(RankItr, RankItr) override;
 
  private:
   LegacyAlgo algo_;

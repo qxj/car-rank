@@ -62,6 +62,8 @@ struct DataPoint
 };
 
 typedef std::vector<DataPoint> RankList;
+typedef RankList::iterator RankItr;
+typedef RankList::const_iterator RankConstItr;
 
 }
 

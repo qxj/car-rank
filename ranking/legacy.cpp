@@ -117,17 +117,16 @@ Legacy::Legacy()
 }
 
 void
-Legacy::ranking(RankList& cars)
+Legacy::ranking(RankItr begItr, RankItr endItr)
 {
   const auto& weights = algo_.get_weights("legacy");
 
   LegacyScore ls(weights);
 
-  std::for_each(cars.begin(), cars.end(),
+  std::for_each(begItr, endItr,
                 [this, &ls](DataPoint& dp) {
                   dp.score = ls.score(dp);
                 });
-
 }
 
 }

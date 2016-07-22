@@ -19,8 +19,6 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "data_point.hpp"
-
 #include "feature_db.hpp"
 
 DEFINE_string(my_host, "tcp://127.0.0.1:3306", "mysql host");
@@ -47,7 +45,7 @@ FeatureDb::~FeatureDb()
 }
 
 void
-FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
+FeatureDb::fetch_feats(RankItr begItr, RankItr endItr, int user_id)
 {
   driver_->threadInit();
   try {
@@ -139,8 +137,8 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
       std::string sql{"select car_id,city_code,model,price_daily,proportion,"
             "review,review_cnt,auto_accept,quick_accept,station,confirm_rate,"
             "collect_cnt from car_rank_feats where car_id in ("};
-      std::for_each(dps.begin(), dps.end(),
-              [&sql](DataPoint& dp)
+      std::for_each(begItr, endItr,
+              [&sql](const DataPoint& dp)
               {
                 sql.append(std::to_string(dp.id));
                 sql.push_back(',');
@@ -151,22 +149,22 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
       VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      size_t i = 0;
-      while (res->next() && i < dps.size()) {
+      RankItr curItr = begItr;
+      while (res->next() && curItr < endItr) {
         int car_id = res->getInt("car_id");
 
-        while (i < dps.size() && dps[i].id != car_id) {
-          LOG(ERROR) << "rotten request? car " << dps[i].id
+        while (curItr < endItr && curItr->id != car_id) {
+          LOG(ERROR) << "rotten request? car " << curItr->id
                      << " is missing";
-          i ++;
+          curItr ++;
         }
 
-        if (! (i < dps.size() && dps[i].id == car_id) ) {
+        if (! (curItr < endItr && curItr->id == car_id) ) {
           // throw std::invalid_argument("broken requests, no data");
           break;
         }
 
-        auto& dp = dps[i++];
+        auto& dp = *curItr++;
 
         {
           auto itr = collected_cars.find(car_id);

@@ -21,7 +21,7 @@ class LambdaMart : public Ranker
  public:
   LambdaMart();
   virtual ~LambdaMart() {}
-  void ranking(RankList&) override;
+  void ranking(RankItr, RankItr) override;
 
  private:
   Ensemble ensemble_;

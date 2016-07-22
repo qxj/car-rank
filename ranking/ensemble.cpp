@@ -141,7 +141,7 @@ Ensemble::build_trees(const char* xmlContent)
 float
 Ensemble::eval(const DataPoint& dp)
 {
-  double score;
+  double score{};
   for (size_t i=0; i<trees_.size(); i++) {
     auto& tree = trees_[i];
     float weight = weights_[i];
