@@ -18,18 +18,19 @@ from timeit import default_timer as timer
 def main():
     parser = argparse.ArgumentParser(description='rank client')
     parser.add_argument('--url', type=str, help='rank svr url')
+    parser.add_argument('--algo', type='legacy', help='rank algo')
     parser.add_argument('--verbose', action='store_true',
                         help='print verbose log')
     args = parser.parse_args()
 
-    url = "http://127.0.0.1:20164/legacy"
+    url = "http://127.0.0.1:20164/rank"
     if args.url:
         url = args.url
 
     uri = urlparse.urlparse(url)
 
     data = {
-        "algo": "legacy",
+        "algo": args.algo,
         "car_list": range(1000),
         "distance": [i / 1000.0 for i in range(1000)],
         "price": [i / 100.0 for i in range(1000)],

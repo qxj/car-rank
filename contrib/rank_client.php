@@ -13,7 +13,7 @@ $data = json_encode($params);
 
 var_dump($data);
 
-$url = "http://127.0.0.1:20164/legacy";
+$url = "http://127.0.0.1:20164/rank";
 
 $c = curl_init($url);
 //curl_setopt($c, CURLOPT_URL, $url);
