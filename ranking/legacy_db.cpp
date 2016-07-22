@@ -76,7 +76,7 @@ LegacyDb::fetch_legacy(std::vector<DataPoint>& dps, int user_id)
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
 
-      int i = 0;
+      size_t i = 0;
       while (res->next()) {
         int car_id = res->getInt("car_id");
 

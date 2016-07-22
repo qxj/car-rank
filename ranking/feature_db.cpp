@@ -149,7 +149,7 @@ FeatureDb::fetch_feats(std::vector<DataPoint>& dps, int user_id)
       VLOG(100) << "sql: " << sql;
 
       std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(sql));
-      int i = 0;
+      size_t i = 0;
       while (res->next() && i < dps.size()) {
         int car_id = res->getInt("car_id");
 

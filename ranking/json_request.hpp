@@ -60,7 +60,7 @@ struct JsonReply
 
   JsonReply() : ret(0) {}
 
-  void assign(std::string&);
+  void to_buffer(std::string&);
 
   void from_request(const JsonRequest& req) {
     for (const auto& car: req.cars) {

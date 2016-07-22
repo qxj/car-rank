@@ -12,6 +12,7 @@
 
 #include "ranker.hpp"
 #include "data_point.hpp"
+#include "ensemble.hpp"
 
 namespace ranking
 {
@@ -19,9 +20,12 @@ namespace ranking
 class LambdaMart : public Ranker
 {
  public:
-  LambdaMart() = default;
+  LambdaMart();
+  virtual ~LambdaMart() {}
   void ranking(RankList&) override;
 
+ private:
+  Ensemble ensemble_;
 };
 }
 

@@ -151,7 +151,7 @@ JsonRequest::operator<<(const std::string& json_string)
 }
 
 void
-JsonReply::assign(std::string& output)
+JsonReply::to_buffer(std::string& output)
 {
   Document doc;
   Document::AllocatorType& alloc = doc.GetAllocator();

@@ -11,7 +11,7 @@
 --thread_pool_size=4
 ### lambda mart model
 --lambda_mart_model=/tmp/lambda_mart.xml
---features=/tmp/feats.txt
+--lambda_mart_ahead=45
 ### memcached
 --memcached_server=--SERVER=127.0.0.1:11211
 --memcached_expired_secs=600

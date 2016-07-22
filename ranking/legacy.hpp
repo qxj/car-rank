@@ -71,6 +71,7 @@ class Legacy : public Ranker
 {
  public:
   Legacy();
+  virtual ~Legacy() {}
   void update(RankList& cars, int user_id)
   {
     db_.fetch_legacy(cars, user_id);

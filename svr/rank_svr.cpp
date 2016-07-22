@@ -85,7 +85,7 @@ RankSvr::rank_handler(const http::server::request& req,
     }
 
     // TODO error handling
-    jrep.assign(rep.content);
+    jrep.to_buffer(rep.content);
 
     try {
       cache_.set(std::to_string(reqid), rep.content);
