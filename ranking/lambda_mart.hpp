@@ -11,7 +11,7 @@
 #define LAMBDA_MART_HPP_
 
 #include "ranker.hpp"
-#include "json_request.hpp"
+#include "data_point.hpp"
 
 namespace ranking
 {
@@ -19,8 +19,8 @@ namespace ranking
 class LambdaMart : public Ranker
 {
  public:
-  LambdaMart();
-  void ranking(JsonRequest&, JsonReply&) override;
+  LambdaMart() = default;
+  void ranking(RankList&) override;
 
 };
 }

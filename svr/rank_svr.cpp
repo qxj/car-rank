@@ -19,6 +19,8 @@ DEFINE_string(memcached_server, "", "memcached server address list");
 DEFINE_int32(memcached_expired_secs, 600, "memcached expired seconds");
 DECLARE_bool(dry);
 
+using namespace ranking;
+
 RankSvr::RankSvr(const std::string& address, short port)
     : http::server::server(address, port, FLAGS_thread_pool_size),
       cache_(FLAGS_memcached_server, FLAGS_memcached_expired_secs)
@@ -44,19 +46,38 @@ RankSvr::rank_handler(const http::server::request& req,
 
   if (cached_content.empty()) {
 
-    ranking::JsonRequest jreq;
-    ranking::JsonReply jrep;
+    JsonRequest jreq;
+    JsonReply jrep;
     try {
       jreq << req.content;
       LOG(INFO) << jreq;
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
+        auto& cars = jreq.cars;
+        int user_id = jreq.user_id;
+        // fetch features of cars
+        featDb_.fetch_feats(cars, user_id);
         if (jreq.algo == "lambdamart") {
-          lmart_.ranking(jreq, jrep);
+          lmart_.ranking(cars);
         } else {
-          legacy_.ranking(jreq, jrep);
+          legacy_.update(cars, user_id);
+          legacy_.ranking(cars);
         }
+
+        std::sort(cars.begin(), cars.end(),
+                  [](const DataPoint& a, const DataPoint& b) {
+                    return a.score > b.score;
+                  });
+        jrep.from_request(jreq);
+
+        if (jreq.debug) {
+          std::for_each(cars.begin(), cars.end(),
+                  [this, &jrep](const DataPoint& dp) {
+                    jrep.scores.push_back(dp.score);
+                  });
+        }
+
       }
     } catch (const std::invalid_argument& e) {
       jrep.ret = -1;

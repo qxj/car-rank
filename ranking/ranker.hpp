@@ -10,14 +10,14 @@
 #ifndef RANKER_HPP_
 #define RANKER_HPP_
 
-#include "json_request.hpp"
+#include "data_point.hpp"
 
 namespace ranking
 {
 class Ranker
 {
  public:
-  virtual void ranking(JsonRequest&, JsonReply&) = 0;
+  virtual void ranking(RankList&) = 0;
 };
 }
 

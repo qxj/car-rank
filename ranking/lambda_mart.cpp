@@ -11,10 +11,13 @@
 
 #include "lambda_mart.hpp"
 
-using namespace ranking;
+namespace ranking
+{
 
 void
-LambdaMart::ranking(JsonRequest& request, JsonReply& reply)
+LambdaMart::ranking(RankList& cars)
 {
+
+}
 
 }

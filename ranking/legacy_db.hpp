@@ -12,10 +12,11 @@
 
 #include <map>
 #include <mutex>
+#include <vector>
 
 #include <boost/noncopyable.hpp>
 
-#include "json_request.hpp"
+#include "data_point.hpp"
 
 namespace sql
 {
@@ -26,57 +27,7 @@ class Driver;
 namespace ranking
 {
 
-class LegacyDb;
-
-class LegacyAlgo
-{
-  friend class LegacyDb;
- public:
-
-  class Weights
-  {
-   public:
-    float get_weight(const std::string& feat) const
-    {
-      const auto& itr = weights_.find(feat);
-      if (itr != weights_.end()) {
-        return itr->second;
-      }
-      return 0;
-    }
-    void set_weight(const std::string& feat, float weight)
-    {
-      weights_[feat] = weight;
-    }
-   private:
-    typedef std::map<std::string, float> FeatWeightMap;
-    FeatWeightMap weights_;
-  };
-
-  const Weights& get_weights(const std::string& algo) noexcept(false);
-
-  float get_weight(const std::string& algo, const std::string& feat);
-
-  size_t size() const
-  {
-    return algos_.size();
-  }
-
- private:
-  void add_weight(const std::string& algo, const std::string& feat,
-                  float weight) {
-    algos_[algo].set_weight(feat, weight);
-  }
-
-  void clear() {
-    algos_.clear();
-  }
-
- private:
-  typedef std::map<std::string, Weights> Algos;
-
-  Algos algos_;
-};
+class LegacyAlgo;
 
 class LegacyDb : private boost::noncopyable
 {
@@ -84,7 +35,7 @@ class LegacyDb : private boost::noncopyable
   LegacyDb();
   ~LegacyDb();
 
-  void fetch_scores(JsonRequest&);
+  void fetch_legacy(std::vector<DataPoint>&, int);
   void fetch_algos(LegacyAlgo&);
  private:
   sql::Driver* driver_;

@@ -7,6 +7,7 @@
 // @created   2016-07-05 19:42:24
 //
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <glog/logging.h>
@@ -15,6 +16,8 @@
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+
+#include "feat_idx.hpp"
 
 #include "json_request.hpp"
 
@@ -135,9 +138,15 @@ JsonRequest::operator<<(const std::string& json_string)
     }
     cars.emplace_back(car_id);
     auto& car = cars.back();
-    car.set("distance", distance);
-    car.set("price", price);
+    car.set(feat_idx::DISTANCE, distance);
+    car.set(feat_idx::PRICE, price);
   }
+
+  // NOTE convenient to fetch data from db
+  std::sort(cars.begin(), cars.end(),
+            [](const DataPoint& a, const DataPoint& b) {
+              return a.id < b.id;
+            });
   return *this;
 }
 

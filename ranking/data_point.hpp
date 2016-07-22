@@ -10,27 +10,44 @@
 #ifndef DATA_POINT_HPP_
 #define DATA_POINT_HPP_
 
-#include <vector>
+#include <array>
 #include <string>
+#include <vector>
+
+#include "feat_idx.hpp"
 
 namespace ranking
 {
 struct DataPoint
 {
-  enum {MAX_FEAT_NUM = 20};
-  // feature index starts from 1
+  DataPoint() = default;
+  explicit DataPoint(int id) :
+      id(id), score(0) {}
+
   int id;
-  float feats[MAX_FEAT_NUM];
+  float score;
 
-  void set(const std::string& feat, float val)
+  // dense features
+  std::array<float, feat_idx::MAX_NUM> feats;
+
+  void set(int feat, float val)
   {
-
+    feats[feat] = val;
   }
 
-  float getValue(int feat_id) {
-    return feats[feat_id];
+  float get(int feat) const
+  {
+    return feats[feat];
+  }
+
+  bool operator<(const DataPoint& o) const
+  {
+    return this->id < o.id;
   }
 };
+
+typedef std::vector<DataPoint> RankList;
+
 }
 
 #endif // DATA_POINT_HPP_

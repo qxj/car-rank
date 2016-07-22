@@ -17,7 +17,8 @@
 
 #include "data_point.hpp"
 
-namespace ranking {
+namespace ranking
+{
 
 struct Query
 {
@@ -38,7 +39,7 @@ struct JsonRequest
 
   Query query;
 
-  std::vector<DataPoint> cars;
+  RankList cars;
 
   JsonRequest() : algo("default") {}
 
@@ -63,7 +64,7 @@ struct JsonReply
 
   void from_request(const JsonRequest& req) {
     for (const auto& car: req.cars) {
-      car_ids.push_back(car.car_id);
+      car_ids.push_back(car.id);
     }
   }
 };
