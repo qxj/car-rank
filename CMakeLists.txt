@@ -318,7 +318,16 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
   # ExternalProject_Get_Property(MySQLConnectorCpp-${mysqlcppconn_RELEASE} binary_dir)
 
   set(MYSQLCONNECTORCPP_INCLUDE_DIRS ${install_dir}/include)
-  set(MYSQLCONNECTORCPP_LIBRARY_PATH ${install_dir}/lib/x86_64-linux-gnu)
+
+  find_library(MYSQLCONNECTORCPP_LIBRARY
+    NAMES
+    libmysqlcppconn-static.a
+    PATHS
+    ${install_dir}/lib
+    ${install_dir}/lib64
+    PATH_SUFFIXES
+    x86_64-linux-gnu)
+  # set(MYSQLCONNECTORCPP_LIBRARY_PATH ${install_dir}/lib/x86_64-linux-gnu)
 
   ExternalProject_Add_Step(
     MySQLConnectorCpp-${mysqlcppconn_RELEASE} workaround
@@ -331,7 +340,10 @@ if(NOT MYSQLCONNECTORCPP_FOUND)
   set(MYSQLCONNECTORCPP_LIBRARIES mysqlcppconn)
   add_library(mysqlcppconn UNKNOWN IMPORTED)
   set_target_properties(mysqlcppconn PROPERTIES
-    IMPORTED_LOCATION ${MYSQLCONNECTORCPP_LIBRARY_PATH}/libmysqlcppconn-static.a)
+    IMPORTED_LOCATION
+    # ${MYSQLCONNECTORCPP_LIBRARY_PATH}/libmysqlcppconn-static.a
+    ${MYSQLCONNECTORCPP_LIBRARY}
+    )
   add_dependencies(mysqlcppconn MySQLConnectorCpp)
 
   include_directories(${MYSQLCONNECTORCPP_INCLUDE_DIRS})
