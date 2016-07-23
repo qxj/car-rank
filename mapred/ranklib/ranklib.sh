@@ -14,7 +14,7 @@ if [[ -z $INPUT ]]; then
     INPUT=corpus_rl.txt
 fi
 
-METRIC=NDCG@45
+METRIC=NDCG@90
 RANKER=6
 TREE=500
 FEATS=feats.no

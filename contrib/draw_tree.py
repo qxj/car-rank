@@ -71,7 +71,7 @@ def build_tree(split):
     return root
 
 trees = []
-for tree in list(ensemble)[:100]:
+for tree in list(ensemble):
     eroot = list(tree)[0]
     trees.append(build_tree(eroot))
 
