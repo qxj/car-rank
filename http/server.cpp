@@ -73,7 +73,7 @@ void server::do_accept()
 
         if (!ec)
         {
-          VLOG(100) << "new connection " << new_connection_->socket().remote_endpoint();
+          LOG(INFO) << "new connection " << new_connection_->socket().remote_endpoint();
           // connection_manager_.start(new_connection_);
           new_connection_->start();
         }
@@ -87,7 +87,7 @@ void server::do_await_stop()
   signals_.async_wait(
       [this](boost::system::error_code ec, int signo)
       {
-        VLOG(100) << "catch quit signal " << signo;
+        LOG(INFO) << "catch quit signal " << signo;
 
         acceptor_.close();
         io_service_pool_.stop();

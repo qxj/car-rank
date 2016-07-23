@@ -46,6 +46,13 @@ sync_se()
     done
 }
 
+sync_38()
+{
+    from=$1
+    to=$2
+    rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress $from qianxiaojun@192.168.1.38:rank/$to
+}
+
 ssh_se()
 {
     cmd=$1
@@ -79,6 +86,10 @@ case $1 in
         sync_se ranksvr.$today ""
         ssh_se "cd ~/rank && ./ranksvr.sh deploy"
         # ssh_se "cd ~/rank && ./ranksvr.sh restart"
+        ;;
+    38)
+        sync_38 legacy/ legacy
+        sync_38 contrib/ contrib
         ;;
     *)
         echo "invalid arguments"

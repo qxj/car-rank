@@ -39,17 +39,25 @@ def db_conf(db_flag, user_flag=None):
         conf['host'] = '192.168.1.28'
         conf['dbname'] = 'icars_staging'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
-    elif db_flag == 'test38':
-        conf['host'] = '192.168.1.38'
-        conf['dbname'] = 'icars_sx'
-        conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'test28_price':
         conf['host'] = '192.168.1.28'
         conf['dbname'] = 'price'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
+    elif db_flag == 'test28_sphinx':
+        conf['host'] = '192.168.1.28'
+        conf['dbname'] = 'sphinx'
+        conf['socket'] = '/home/work/log/mysql/mysql.sock'
+    elif db_flag == 'test38':
+        conf['host'] = '192.168.1.38'
+        conf['dbname'] = 'icars_sx'
+        conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'test38_price':
         conf['host'] = '192.168.1.38'
         conf['dbname'] = 'price'
+        conf['socket'] = '/home/work/log/mysql/mysql.sock'
+    elif db_flag == 'test38_sphinx':
+        conf['host'] = '192.168.1.38'
+        conf['dbname'] = 'sphinx'
         conf['socket'] = '/home/work/log/mysql/mysql.sock'
     elif db_flag == 'master':
         conf['host'] = '10.45.232.207'

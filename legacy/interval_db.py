@@ -63,17 +63,20 @@ class IntervalDb(object):
         db_names = {'master': 'master',
                     'score': 'master',
                     'price': 'price',
-                    'slave': 'slave'}
+                    'slave': 'slave',
+                    'sphinx': 'sphinx'}
         if self.env_flag == "test28":
             db_names = {'master': 'test28',
                         'score': 'test28',
                         'price': 'test28_price',
-                        'slave': 'test28'}
+                        'slave': 'test28',
+                        'sphinx': 'test28_sphinx'}
         elif self.env_flag == "test38":
             db_names = {'master': 'test38',
                         'score': 'test38',
                         'price': 'test38_price',
-                        'slave': 'test38'}
+                        'slave': 'test38',
+                        'sphinx': 'test38_sphinx'}
         return mydb.get_db(db_names[flag])
 
     def __enter__(self):
