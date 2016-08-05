@@ -98,7 +98,7 @@ FROM
     FROM
         db.php_svr_log
     WHERE ds=${hiveconf:datestr}
-        AND uri='/vehicle.info'
+        AND uri in ('/vehicle.info', '/vehicle.infov2')
         AND (params['query_id'] IS NOT NULL AND params['query_id'] != "null")
         AND car_id IS NOT NULL
         ) t_click ON t_click.qcid=t_exp.qcid
