@@ -43,7 +43,7 @@ RankSvr::rank_handler(const http::server::request& req,
   } catch(const std::runtime_error& e) {
     LOG(WARNING) << "runtime error: " << e.what();
   } catch(const std::invalid_argument& e) {
-    VLOG(10) << "receive invalid args: " << e.what();
+    VLOG(100) << "memcached: " << e.what();
   }
 
   VLOG(100) << "request content " << req.content;
