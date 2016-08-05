@@ -38,15 +38,20 @@ RankSvr::rank_handler(const http::server::request& req,
   std::string cached_content;
   std::hash<std::string> hash_func;
   uint32_t reqid = hash_func(req.content);
+
+  std::string prelog{" ["};
+  prelog.append(std::to_string(reqid));
+  prelog.append("] ");
+
   try {
     cached_content = cache_.get(std::to_string(reqid));
   } catch(const std::runtime_error& e) {
-    LOG(WARNING) << reqid << "=> runtime error: " << e.what();
+    LOG(WARNING) << prelog << "runtime error: " << e.what();
   } catch(const std::invalid_argument& e) {
-    VLOG(100) << reqid << "=> memcached: " << e.what();
+    VLOG(100) << prelog << "memcached: " << e.what();
   }
 
-  VLOG(100) << reqid << "=> request content " << req.content;
+  VLOG(100) << prelog << "request content " << req.content;
 
   if (cached_content.empty()) {
 
@@ -54,7 +59,7 @@ RankSvr::rank_handler(const http::server::request& req,
     JsonReply jrep;
     try {
       jreq << req.content;
-      VLOG(10) << reqid << "=> " << jreq;
+      VLOG(10) << prelog << jreq;
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
@@ -106,20 +111,20 @@ RankSvr::rank_handler(const http::server::request& req,
 
     // TODO error handling
     jrep.to_buffer(rep.content);
-    VLOG(10) << reqid << "=> " << jrep;
+    VLOG(10) << prelog << jrep;
 
     try {
       cache_.set(std::to_string(reqid), rep.content);
     } catch(const std::runtime_error& e) {
-      LOG(WARNING) << reqid << "=> " << e.what();
+      LOG(WARNING) << prelog << e.what();
     } catch(const std::invalid_argument& e) {
-      VLOG(100) << reqid << "=> " << e.what();
+      VLOG(100) << prelog << e.what();
     }
   } else {
     rep.content.assign(cached_content);
-    VLOG(10) << reqid << "=> hit cache.";
+    VLOG(10) << prelog << "hit cache.";
   }
 
-  VLOG(100) << reqid << "=> reply content: " << rep.content;
+  VLOG(100) << prelog << "reply content: " << rep.content;
   rep.add_content_type("plain/json");
 }
