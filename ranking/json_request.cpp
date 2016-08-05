@@ -208,3 +208,15 @@ std::ostream& operator<<(std::ostream& os, const ranking::JsonRequest& jr)
      << ", cars num " << jr.cars.size();
   return os;
 }
+
+std::ostream& operator<<(std::ostream& os, const ranking::JsonReply& jr)
+{
+  os << "[JsonReply] ";
+  if (jr.ret) {  // error
+    os << "return error " << jr.ret
+       << ",  " << jr.err_msg;
+  } else {
+    os << "reply sorted " << jr.car_ids.size() << " cars";
+  }
+  return os;
+}

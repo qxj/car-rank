@@ -41,9 +41,9 @@ RankSvr::rank_handler(const http::server::request& req,
   try {
     cached_content = cache_.get(std::to_string(reqid));
   } catch(const std::runtime_error& e) {
-    LOG(WARNING) << "Runtime error: " << e.what();
+    LOG(WARNING) << "runtime error: " << e.what();
   } catch(const std::invalid_argument& e) {
-    VLOG(100) << "Invalid args: " << e.what();
+    VLOG(10) << "receive invalid args: " << e.what();
   }
 
   VLOG(100) << "request content " << req.content;
@@ -54,7 +54,7 @@ RankSvr::rank_handler(const http::server::request& req,
     JsonReply jrep;
     try {
       jreq << req.content;
-      LOG(INFO) << jreq;
+      VLOG(10) << jreq;
       if (FLAGS_dry) {
         jrep.from_request(jreq);
       } else {
@@ -106,6 +106,7 @@ RankSvr::rank_handler(const http::server::request& req,
 
     // TODO error handling
     jrep.to_buffer(rep.content);
+    VLOG(10) << jrep;
 
     try {
       cache_.set(std::to_string(reqid), rep.content);
@@ -116,9 +117,9 @@ RankSvr::rank_handler(const http::server::request& req,
     }
   } else {
     rep.content.assign(cached_content);
-    VLOG(100) << "hit cache, key: " << reqid;
+    VLOG(10) << "hit cache, key: " << reqid;
   }
 
-  VLOG(100) << "reply content " << rep.content;
+  VLOG(100) << "reply content: " << rep.content;
   rep.add_content_type("plain/json");
 }

@@ -73,7 +73,7 @@ void server::do_accept()
 
         if (!ec)
         {
-          LOG(INFO) << "new connection " << new_connection_->socket().remote_endpoint();
+          VLOG(10) << "new connection " << new_connection_->socket().remote_endpoint();
           // connection_manager_.start(new_connection_);
           new_connection_->start();
         }

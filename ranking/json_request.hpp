@@ -68,5 +68,6 @@ struct JsonReply
 }
 
 std::ostream& operator<<(std::ostream&, const ranking::JsonRequest&) ;
+std::ostream& operator<<(std::ostream&, const ranking::JsonReply&) ;
 
 #endif // JSON_REQUEST_HPP_
