@@ -47,7 +47,7 @@ struct DataPoint
 
   std::string to_string() const
   {
-    std::string out{"dp id:"};
+    std::string out{"DPid:"};
     out.append(std::to_string(id));
     out.append(",score:");
     out.append(std::to_string(score));

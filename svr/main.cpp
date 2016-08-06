@@ -32,6 +32,8 @@ int main(int argc, char* argv[])
 
   google::InitGoogleLogging(argv[0]);
 
+  google::InstallFailureSignalHandler();
+
   if (already_running(FLAGS_lock_file.c_str())) {
     LOG(ERROR) << "another instance is already running, check " << FLAGS_lock_file;
     return -1;

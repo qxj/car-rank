@@ -7,6 +7,7 @@
 // @created   2016-04-24 23:02:37
 //
 
+#include <iomanip>
 #include <iterator>
 #include <functional>
 
@@ -73,6 +74,7 @@ RankSvr::rank_handler(const http::server::request& req,
         } else {
           headItr = cars.end();
         }
+        // pre-sort
         if (headItr < endItr) {
           namespace fi = ::feat_idx;
 
@@ -94,13 +96,23 @@ RankSvr::rank_handler(const http::server::request& req,
                   [](const DataPoint& a, const DataPoint& b) {
                     return a.score > b.score;
                   });
+
         jrep.from_request(jreq);
 
         if (jreq.debug) {
           std::for_each(begItr, headItr,
-                  [this, &jrep](const DataPoint& dp) {
+                  [&jrep](const DataPoint& dp) {
                     jrep.scores.push_back(dp.score);
                   });
+
+          std::ostringstream oss;
+          oss << "debug info, sorted rank list:\n";
+          int idx = 1;
+          std::for_each(begItr, headItr,
+                  [&oss, &idx](const DataPoint& dp) {
+                    oss << std::setw(4) << idx++ << " : " << dp.to_string() << "\n";
+                  });
+          VLOG(10) << oss.str();
         }
 
       }
