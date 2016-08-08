@@ -84,6 +84,13 @@ RankSvr::rank_handler(const http::server::request& req,
                     return a.get(fi::DISTANCE) < b.get(fi::DISTANCE);
                   });
         }
+
+        // NOTE convenient to fetch data from db
+        std::sort(begItr, headItr,
+                  [](const DataPoint& a, const DataPoint& b) {
+                    return a.id < b.id;
+                  });
+
         // fetch features of cars
         featDb_.fetch_feats(begItr, headItr, user_id);
         if (jreq.algo == "lambdamart") {

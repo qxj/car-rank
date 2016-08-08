@@ -143,11 +143,6 @@ JsonRequest::operator<<(const std::string& json_string)
     car.set(feat_idx::PRICE, price);
   }
 
-  // NOTE convenient to fetch data from db
-  std::sort(cars.begin(), cars.end(),
-            [](const DataPoint& a, const DataPoint& b) {
-              return a.id < b.id;
-            });
   return *this;
 }
 
