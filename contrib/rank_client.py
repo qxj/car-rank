@@ -20,10 +20,13 @@ def main():
     parser.add_argument('--url', type=str, help='rank svr url')
     parser.add_argument('--algo', type=str, default='legacy',
                         help='rank algo')
+    parser.add_argument('--cars', type=str, help='car list')
     parser.add_argument('--num', type=int, default=100,
                         help='car num in one request')
     parser.add_argument('--user', type=int, default=0,
                         help='user id in request')
+    parser.add_argument('--debug', action='store_true',
+                        help='turn debug on')
     parser.add_argument('--verbose', action='store_true',
                         help='print verbose log')
     args = parser.parse_args()
@@ -34,12 +37,21 @@ def main():
 
     uri = urlparse.urlparse(url)
 
+    cars = []
+    dists = []
+    if args.cars:
+        cars = [int(i) for i in args.cars.split(',')]
+        dists = [i / 500.0 for i in range(len(cars))]
+    else:
+        cars = range(args.num)
+        dists = [i / 500.0 for i in range(args.num)]
+
     data = {
         "algo": args.algo,
-        "car_list": range(args.num),
-        "distance": [i / 500.0 for i in range(args.num)],
-        "price": [i / 50.0 for i in range(args.num)],
-        "user_id": args.user
+        "car_list": cars,
+        "distance": dists,
+        "user_id": args.user,
+        "debug": args.debug
     }
 
     request = json.dumps(data)

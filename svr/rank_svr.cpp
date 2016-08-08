@@ -110,11 +110,10 @@ RankSvr::rank_handler(const http::server::request& req,
           int idx = 1;
           std::for_each(begItr, headItr,
                   [&oss, &idx](const DataPoint& dp) {
-                    oss << std::setw(4) << idx++ << " : " << dp.to_string() << "\n";
+                    oss << std::setw(4) << idx++ << ") " << dp.to_string() << "\n";
                   });
           VLOG(10) << oss.str();
         }
-
       }
     } catch (const std::invalid_argument& e) {
       jrep.ret = -1;

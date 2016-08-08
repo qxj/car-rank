@@ -70,10 +70,12 @@ case $1 in
         sync_relay mapred/ mapred
         sync_relay hive/ hive
         sync_relay legacy/ legacy
+        sync_relay contrib/ contrib
         ;;
     log01)
         sync_log01 "mapred/*" ""
         sync_log01 hive/query_log/ hive
+        sync_log01 contrib/ contrib
         ;;
     logic00)
         sync_logic00 legacy/ legacy

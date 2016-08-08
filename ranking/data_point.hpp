@@ -49,14 +49,16 @@ struct DataPoint
   {
     std::string out{"DPid:"};
     out.append(std::to_string(id));
-    out.append(",score:");
+    out.append(",\tscore:");
     out.append(std::to_string(score));
-    out.append(",feats:");
-    for (auto& f: feats) {
-      out.append(std::to_string(f));
-      out.append(",");
+    out.append("\n");
+    for (size_t i=0; i<feats.size(); i++) {
+      out.append("\t\t");
+      out.append(std::to_string(i));
+      out.append(":\t");
+      out.append(std::to_string(feats[i]));
+      out.append("\n");
     }
-    out.back() = '.';
     return out;
   }
 };
