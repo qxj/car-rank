@@ -22,6 +22,7 @@ DEFINE_int32(thread_pool_size, 4, "rank server thread pool size");
 DEFINE_string(memcached_server, "", "memcached server address list");
 DEFINE_int32(memcached_expired_secs, 600, "memcached expired seconds");
 DEFINE_int32(rank_num, 0, "only rank first few cars (distance)");
+DEFINE_int32(debug_user_id, -1, "user id to print debug info");
 DECLARE_bool(dry);
 
 using namespace ranking;
@@ -99,7 +100,7 @@ RankSvr::rank_handler(const http::server::request& req,
 
         jrep.from_request(jreq);
 
-        if (jreq.debug) {
+        if (jreq.debug || jreq.user_id == FLAGS_debug_user_id) {
           std::for_each(begItr, headItr,
                   [&jrep](const DataPoint& dp) {
                     jrep.scores.push_back(dp.score);
@@ -112,7 +113,7 @@ RankSvr::rank_handler(const http::server::request& req,
                   [&oss, &idx](const DataPoint& dp) {
                     oss << std::setw(4) << idx++ << ") " << dp.to_string() << "\n";
                   });
-          VLOG(10) << oss.str();
+          VLOG(10) << prelog << oss.str();
         }
       }
     } catch (const std::invalid_argument& e) {

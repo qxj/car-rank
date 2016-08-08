@@ -9,6 +9,8 @@
 --dry=false
 --lock_file=/tmp/rank_svr.pid
 --thread_pool_size=4
+### debug user id
+--debug_user_id=141047
 ### only rank ahead cars
 --rank_num=60
 ### lambda mart model
