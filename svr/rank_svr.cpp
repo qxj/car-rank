@@ -75,11 +75,11 @@ RankSvr::rank_handler(const http::server::request& req,
         } else {
           headItr = cars.end();
         }
-        // pre-sort
+        // pre-rank by distance if too many cars
         if (headItr < endItr) {
           namespace fi = ::feat_idx;
 
-          std::sort(headItr, endItr,
+          std::sort(begItr, endItr,
                   [](const DataPoint& a, const DataPoint& b) {
                     return a.get(fi::DISTANCE) < b.get(fi::DISTANCE);
                   });
@@ -93,6 +93,7 @@ RankSvr::rank_handler(const http::server::request& req,
           legacy_.ranking(begItr, headItr);
         }
 
+        // re-rank ahead cars by score
         std::sort(begItr, headItr,
                   [](const DataPoint& a, const DataPoint& b) {
                     return a.score > b.score;
@@ -100,6 +101,7 @@ RankSvr::rank_handler(const http::server::request& req,
 
         jrep.from_request(jreq);
 
+        // print debug info
         if (jreq.debug || jreq.user_id == FLAGS_debug_user_id) {
           std::for_each(begItr, headItr,
                   [&jrep](const DataPoint& dp) {
