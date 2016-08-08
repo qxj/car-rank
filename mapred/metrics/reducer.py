@@ -48,16 +48,31 @@ def process(rows, query):
     #     sys.stderr.write(
     #         "reporter:counter:My Counters,Skip CTR>%f,1\n" % g_max_ctr)
     #     return
-    row_max_gain = max(rows, key=lambda x: x[1])
-    label = gain2label(row_max_gain[1])
-    for i, (idx, gain) in enumerate(rows):
+    if len(rows) == 0:
+        sys.stderr.write(
+            "reporter:counter:My Counters,Empty rows,1\n")
+        return
+    row_max_gain = max(rows, key=lambda x: x[-1])
+    query_label = gain2label(row_max_gain[-1])
+    impress_cnt = rows[-1][0] + 1
+    click_cnt = 0
+    precheck_cnt = 0
+    order_cnt = 0
+    for i, (idx, label, gain) in enumerate(rows):
         # P@k
         patk = (i + 1) / (idx + 1)
         patks += patk
         # dcg(i) = gain_i / discount_i
         d1 += gain / cmath.log(idx + 2, 2).real
-    for i, (_, gain) in enumerate(sorted(
-            rows, key=lambda x: x[1], reverse=True)):
+        # count
+        if label in ("click", "precheck", "order"):
+            click_cnt += 1
+        elif label in ("precheck", "order"):
+            precheck_cnt += 1
+        elif label == "order":
+            order_cnt += 1
+    for i, (_, _, gain) in enumerate(sorted(
+            rows, key=lambda x: x[-1], reverse=True)):
         # idcg(i)
         d2 += gain / cmath.log(i + 2, 2).real
     # AP = {\sum_k P@k \over relative docs }
@@ -66,10 +81,19 @@ def process(rows, query):
     # dcg = \sum_{i=1}^N dcg(i)
     ndcg = d1 / d2
     ndcg_str = "%.5f" % ndcg
+    # ctr
+    ctr = click_cnt / impress_cnt
+    cvr = order_cnt / impress_cnt
+    cvr1 = precheck_cnt / click_cnt
+    cvr2 = order_cnt / click_cnt
     # OUTPUT: qid, label, ap, ndcg, city_code, algo, visit_time
-    query.insert(1, label)
+    query.insert(1, query_label)
     query.insert(2, ap_str)
     query.insert(3, ndcg_str)
+    # cvr
+    extra = [impress_cnt, click_cnt, precheck_cnt,
+             order_cnt, ctr, cvr, cvr1, cvr2]
+    query += ["%s" % i for i in extra]
     print "\t".join(query)
     sys.stderr.write("reporter:counter:My Counters,Metrics Counter,1\n")
 
@@ -80,7 +104,7 @@ def main():
     for line in sys.stdin:
         cols = line.strip('\n').split('\t')
         qid, idx_str = cols[0].split(':')
-        idx = float(idx_str)
+        idx = int(idx_str)
         label = cols[1]
         gain = label2gain(label)
         query = [qid] + cols[2:]  # qid, city_code, algo, visit_time
@@ -90,7 +114,7 @@ def main():
             process(rows, last_query)
             rows = []
             last_query = query
-        rows.append((idx, gain))
+        rows.append((idx, label, gain))
     process(rows, last_query)
 
 if __name__ == "__main__":

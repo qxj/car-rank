@@ -36,20 +36,20 @@ def main():
                 "reporter:counter:My Counters,Skip >%dPages,1\n" % max_page)
             continue
         # only clicked items are required
-        if label != "impress":
-            if label == 'click':
-                sys.stderr.write("reporter:counter:My Counters,CV-Click,1\n")
-            elif label == 'precheck':
-                sys.stderr.write(
-                    "reporter:counter:My Counters,CV-Precheck,1\n")
-            elif label == 'order':
-                sys.stderr.write("reporter:counter:My Counters,CV-Order,1\n")
-            else:
-                sys.stderr.write("reporter:counter:My Counters,CV-Unknown,1\n")
-            print "%s:%.10d\t%s\t%s\t%s\t%s" % (
-                qid, idx, label, city_code, algo, visit_time)
+        if label == 'impress':
+            sys.stderr.write("reporter:counter:My Counters,CV-Impress,1\n")
+            continue
+        elif label == 'click':
+            sys.stderr.write("reporter:counter:My Counters,CV-Click,1\n")
+        elif label == 'precheck':
+            sys.stderr.write("reporter:counter:My Counters,CV-Precheck,1\n")
+        elif label == 'order':
+            sys.stderr.write("reporter:counter:My Counters,CV-Order,1\n")
         else:
-            sys.stderr.write("reporter:counter:My Counters,Impressed,1\n")
+            sys.stderr.write("reporter:counter:My Counters,CV-Unknown,1\n")
+            continue
+        print "%s:%.10d\t%s\t%s\t%s\t%s" % (
+            qid, idx, label, city_code, algo, visit_time)
 
 if __name__ == "__main__":
     main()

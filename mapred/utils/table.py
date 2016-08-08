@@ -41,6 +41,7 @@ class TableMeta(object):
         rets = {}
         for i, item in enumerate(cols):
             field, ftype = self._fields[i]
+            # print >> sys.stderr, i, field, ftype, item
             if item in ("\\N", "NULL"):
                 item = None
             elif ftype == 'bigint' and 'time' in field:
