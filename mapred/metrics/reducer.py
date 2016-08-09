@@ -67,9 +67,9 @@ def process(rows, query):
         # count
         if label in ("click", "precheck", "order"):
             click_cnt += 1
-        elif label in ("precheck", "order"):
+        if label in ("precheck", "order"):
             precheck_cnt += 1
-        elif label == "order":
+        if label == "order":
             order_cnt += 1
     for i, (_, _, gain) in enumerate(sorted(
             rows, key=lambda x: x[-1], reverse=True)):
